@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;700&family=Barlow+Condensed:wght@400;600&display=swap">
+<script src="https://unpkg.com/d3@7.9.0/dist/d3.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js" integrity="sha384-Ukv1p/xTma6P4/2bY5KzWBw+ydSpXmhCMtyciIQVDJ1RmOxtCYNMF1uXT9T63H67" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; background: #f2f2f3; }
+  a { color: #416180; text-underline-offset: 3px; }
+  a:hover { color: #5980a6; }
+  ::selection { background: rgba(89,128,166,.3); }
+  input, textarea, button { font-family: Barlow, system-ui, sans-serif; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid #5980a6; outline-offset: 2px; }
+  .binscroll::-webkit-scrollbar { width: 0; height: 0; }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#f2f2f3;color:#1d1f20;font-family:Barlow,system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;gap:22px;padding:34px 16px 56px">
+
+  <div style="display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:rgba(29,31,32,.55)">Been In · interactive prototype</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:27px;letter-spacing:-.01em;line-height:1.1">Ditch the red flags. Collect the world's.</div>
+  </div>
+
+  <div style="width:390px;height:844px;flex:none;position:relative;background:#f2f2f3;border:1px solid rgba(29,31,32,.3);box-shadow:0 12px 32px rgba(43,43,45,.22);display:flex;flex-direction:column;overflow:hidden">
+
+    <div style="height:42px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:.06em;color:rgba(29,31,32,.7)">
+      <span>9:41</span>
+      <div style="display:flex;gap:4px;align-items:center">
+        <span style="width:5px;height:5px;background:rgba(29,31,32,.5)"></span>
+        <span style="width:5px;height:5px;background:rgba(29,31,32,.5)"></span>
+        <span style="width:5px;height:5px;background:rgba(29,31,32,.5)"></span>
+        <span style="width:20px;height:9px;border:1px solid rgba(29,31,32,.5);margin-left:4px"></span>
+      </div>
+    </div>
+
+    <div style="flex:1;position:relative;overflow:hidden">
+
+      <!-- ══ MAP ══ -->
+      <sc-if value="{{ isMap }}" hint-placeholder-val="{{ true }}">
+      <div class="binscroll" style="position:absolute;inset:0;overflow-y:auto;padding:2px 20px 24px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 14px">
+          <div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;letter-spacing:.13em;text-transform:uppercase;line-height:1">Been In</div>
+            <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(29,31,32,.5);margin-top:3px">Private to you</div>
+          </div>
+          <button onClick="{{ openAdd }}" style="width:40px;height:40px;border-radius:50%;border:0;background:#5980a6;color:#fff;font-size:24px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0 0 3px 0" style-hover="background:#416180">+</button>
+        </div>
+
+        <button onClick="{{ openRel }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 12px;background:transparent;border:1px solid rgba(89,128,166,.55);cursor:pointer;text-align:left;margin-bottom:14px" style-hover="background:rgba(89,128,166,.08)">
+          <span style="width:8px;height:8px;background:#5980a6;flex:none"></span>
+          <span style="flex:1;font-family:'Barlow Condensed',sans-serif;font-size:16px;letter-spacing:.04em">{{ relName }}</span>
+          <span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#416180">Shared map ›</span>
+        </button>
+
+        <div style="position:relative;border:1px solid rgba(29,31,32,.18);height:318px;overflow:hidden;touch-action:pan-y" onPointerDown="{{ onDown }}" onPointerMove="{{ onMove }}" onPointerUp="{{ onUp }}" onPointerCancel="{{ onUp }}">
+          <span style="position:absolute;top:-5.5px;left:-5.5px;width:11px;height:11px;background:linear-gradient(to right,transparent 5px,rgba(29,31,32,.5) 5px,rgba(29,31,32,.5) 6px,transparent 6px),linear-gradient(to bottom,transparent 5px,rgba(29,31,32,.5) 5px,rgba(29,31,32,.5) 6px,transparent 6px)"></span>
+          <span style="position:absolute;top:-5.5px;right:-5.5px;width:11px;height:11px;background:linear-gradient(to right,transparent 5px,rgba(29,31,32,.5) 5px,rgba(29,31,32,.5) 6px,transparent 6px),linear-gradient(to bottom,transparent 5px,rgba(29,31,32,.5) 5px,rgba(29,31,32,.5) 6px,transparent 6px)"></span>
+          <span style="position:absolute;bottom:-5.5px;left:-5.5px;width:11px;height:11px;background:linear-gradient(to right,transparent 5px,rgba(29,31,32,.5) 5px,rgba(29,31,32,.5) 6px,transparent 6px),linear-gradient(to bottom,transparent 5px,rgba(29,31,32,.5) 5px,rgba(29,31,32,.5) 6px,transparent 6px)"></span>
+          <span style="position:absolute;bottom:-5.5px;right:-5.5px;width:11px;height:11px;background:linear-gradient(to right,transparent 5px,rgba(29,31,32,.5) 5px,rgba(29,31,32,.5) 6px,transparent 6px),linear-gradient(to bottom,transparent 5px,rgba(29,31,32,.5) 5px,rgba(29,31,32,.5) 6px,transparent 6px)"></span>
+          <div style="display:flex;width:200%;height:100%;transition:transform .34s cubic-bezier(.22,.7,.2,1);transform:{{ trackTransform }}">
+            <div style="width:50%;height:100%;display:flex;flex-direction:column;padding:12px">
+              <div style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.55);flex:none">Been · where it happened</div>
+              <div style="flex:1;min-height:0;margin-top:6px">
+                <x-import component-from-global-scope="world-map" from="./world-map.js" logged="{{ beenLogged }}" fill="{{ stampColor }}" hint-size="100%,100%"></x-import>
+              </div>
+            </div>
+            <div style="width:50%;height:100%;display:flex;flex-direction:column;padding:12px">
+              <div style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.55);flex:none">Been In · nationalities</div>
+              <div style="flex:1;min-height:0;margin-top:6px">
+                <x-import component-from-global-scope="world-map" from="./world-map.js" logged="{{ natLogged }}" fill="{{ stampColor }}" hint-size="100%,100%"></x-import>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:center;gap:14px;padding:16px 0 14px">
+          <button onClick="{{ goSideA }}" style="width:9px;height:9px;padding:0;border:1px solid rgba(29,31,32,.45);cursor:pointer;background:{{ dotA }}"></button>
+          <span style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(29,31,32,.42)">Swipe to flip</span>
+          <button onClick="{{ goSideB }}" style="width:9px;height:9px;padding:0;border:1px solid rgba(29,31,32,.45);cursor:pointer;background:{{ dotB }}"></button>
+        </div>
+
+        <div style="position:relative;border:1px solid rgba(29,31,32,.18);display:flex">
+          <span style="position:absolute;top:-5.5px;left:-5.5px;width:11px;height:11px;background:linear-gradient(to right,transparent 5px,rgba(29,31,32,.5) 5px,rgba(29,31,32,.5) 6px,transparent 6px),linear-gradient(to bottom,transparent 5px,rgba(29,31,32,.5) 5px,rgba(29,31,32,.5) 6px,transparent 6px)"></span>
+          <span style="position:absolute;top:-5.5px;right:-5.5px;width:11px;height:11px;background:linear-gradient(to right,transparent 5px,rgba(29,31,32,.5) 5px,rgba(29,31,32,.5) 6px,transparent 6px),linear-gradient(to bottom,transparent 5px,rgba(29,31,32,.5) 5px,rgba(29,31,32,.5) 6px,transparent 6px)"></span>
+          <span style="position:absolute;bottom:-5.5px;left:-5.5px;width:11px;height:11px;background:linear-gradient(to right,transparent 5px,rgba(29,31,32,.5) 5px,rgba(29,31,32,.5) 6px,transparent 6px),linear-gradient(to bottom,transparent 5px,rgba(29,31,32,.5) 5px,rgba(29,31,32,.5) 6px,transparent 6px)"></span>
+          <span style="position:absolute;bottom:-5.5px;right:-5.5px;width:11px;height:11px;background:linear-gradient(to right,transparent 5px,rgba(29,31,32,.5) 5px,rgba(29,31,32,.5) 6px,transparent 6px),linear-gradient(to bottom,transparent 5px,rgba(29,31,32,.5) 5px,rgba(29,31,32,.5) 6px,transparent 6px)"></span>
+          <div style="flex:1;padding:14px 16px 13px">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:44px;line-height:.95;letter-spacing:-.02em">{{ statCount }}</div>
+            <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(29,31,32,.55);margin-top:5px">{{ statCountLabel }}</div>
+          </div>
+          <div style="width:1px;background:rgba(29,31,32,.16)"></div>
+          <div style="flex:1;padding:14px 16px 13px">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:44px;line-height:.95;letter-spacing:-.02em;color:{{ stampColor }}">{{ statPct }}%</div>
+            <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(29,31,32,.55);margin-top:5px">Of the world</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:rgba(29,31,32,.5);margin-top:12px;text-wrap:pretty">{{ statNote }}</div>
+      </div>
+      </sc-if>
+
+      <!-- ══ FEED ══ -->
+      <sc-if value="{{ isFeed }}" hint-placeholder-val="{{ false }}">
+      <div class="binscroll" style="position:absolute;inset:0;overflow-y:auto;padding:2px 20px 24px">
+        <div style="padding:8px 0 16px">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;letter-spacing:.13em;text-transform:uppercase;line-height:1">Feed</div>
+          <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(29,31,32,.5);margin-top:3px">Friends only · never public</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <sc-for list="{{ feed }}" as="p" hint-placeholder-count="3">
+            <div style="border:1px solid rgba(29,31,32,.18);border-left:{{ p.edge }};background:transparent;padding:13px 14px">
+              <sc-if value="{{ p.isRel }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+                  <span style="width:7px;height:7px;background:#5980a6"></span>
+                  <span style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#416180">Shared map</span>
+                  <span style="flex:1"></span>
+                  <span style="font-size:11px;color:rgba(29,31,32,.45)">{{ p.when }}</span>
+                </div>
+                <div style="display:flex;gap:11px;align-items:flex-start">
+                  <div style="width:34px;height:34px;flex:none;border:1px solid rgba(29,31,32,.25);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:.04em">{{ p.initials }}</div>
+                  <div style="flex:1;font-size:15px;line-height:1.5">{{ p.relLead }}<b style="font-weight:700">{{ p.relMapName }}</b></div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ p.isSolo }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;gap:11px;align-items:center">
+                  <button onClick="{{ p.onProfile }}" style="width:38px;height:38px;flex:none;border:1px solid rgba(29,31,32,.25);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:15px;letter-spacing:.04em">{{ p.initials }}</button>
+                  <div style="flex:1;min-width:0">
+                    <button onClick="{{ p.onProfile }}" style="background:transparent;border:0;padding:0;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:18px;letter-spacing:.02em;color:#1d1f20;display:block;text-align:left">{{ p.who }}</button>
+                    <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgba(29,31,32,.5);margin-top:1px">{{ p.route }}</div>
+                  </div>
+                  <div style="font-size:21px;line-height:1;flex:none">{{ p.emoji }}</div>
+                  <button onClick="{{ p.onMenu }}" style="width:28px;height:28px;flex:none;background:transparent;border:0;cursor:pointer;color:rgba(29,31,32,.5);font-size:16px;letter-spacing:.06em;padding:0">···</button>
+                </div>
+                <button onClick="{{ p.onOpen }}" style="display:block;width:100%;text-align:left;background:transparent;border:0;padding:0;cursor:pointer;color:#1d1f20">
+                  <div style="font-size:15px;line-height:1.5;margin-top:10px;text-wrap:pretty">{{ p.note }}</div>
+                  <sc-if value="{{ p.photo }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:11px;height:132px;border:1px solid rgba(29,31,32,.18);background-image:repeating-linear-gradient(135deg,rgba(89,128,166,.14) 0 6px,transparent 6px 12px);display:flex;align-items:flex-end;padding:8px">
+                      <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:rgba(29,31,32,.5);background:#f2f2f3;padding:2px 5px">photo</span>
+                    </div>
+                  </sc-if>
+                </button>
+                <div style="display:flex;align-items:center;gap:16px;margin-top:12px;padding-top:11px;border-top:1px solid rgba(29,31,32,.12)">
+                  <button onClick="{{ p.onKudos }}" style="display:flex;align-items:center;gap:7px;background:transparent;border:0;padding:0;cursor:pointer;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:{{ p.kudosColor }}">
+                    <span style="width:9px;height:9px;transform:rotate(45deg);background:{{ p.kudosFill }};border:1px solid {{ p.kudosColor }}"></span>
+                    <span>{{ p.kudosCount }} kudos</span>
+                  </button>
+                  <button onClick="{{ p.onOpen }}" style="display:flex;align-items:center;gap:7px;background:transparent;border:0;padding:0;cursor:pointer;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:rgba(29,31,32,.55)">
+                    <span style="width:9px;height:9px;border:1px solid rgba(29,31,32,.5)"></span>
+                    <span>{{ p.commentCount }} comments</span>
+                  </button>
+                  <span style="flex:1"></span>
+                  <span style="font-size:11px;color:rgba(29,31,32,.42)">{{ p.when }}</span>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ HISTORY ══ -->
+      <sc-if value="{{ isHistory }}" hint-placeholder-val="{{ false }}">
+      <div class="binscroll" style="position:absolute;inset:0;overflow-y:auto;padding:2px 20px 24px">
+        <div style="padding:8px 0 16px">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;letter-spacing:.13em;text-transform:uppercase;line-height:1">History</div>
+          <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(29,31,32,.5);margin-top:3px">{{ historyCountLabel }}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <sc-for list="{{ history }}" as="e" hint-placeholder-count="4">
+            <div style="position:relative;border:1px solid rgba(29,31,32,.18);padding:13px 14px">
+              <div style="display:flex;align-items:flex-start;gap:11px">
+                <div style="flex:1;min-width:0">
+                  <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;letter-spacing:.02em;line-height:1.1">{{ e.country }}</div>
+                  <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgba(29,31,32,.5);margin-top:3px">{{ e.sub }}</div>
+                </div>
+                <div style="font-size:20px;line-height:1;flex:none">{{ e.emoji }}</div>
+                <div style="display:flex;align-items:center;gap:2px;flex:none">
+                  <sc-if value="{{ e.private }}" hint-placeholder-val="{{ false }}">
+                    <span style="display:flex;align-items:center;gap:5px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(29,31,32,.5);border:1px solid rgba(29,31,32,.2);padding:2px 6px">
+                      <span style="width:7px;height:9px;border:1px solid rgba(29,31,32,.55);border-top-color:transparent;position:relative;display:inline-block"></span>Private
+                    </span>
+                  </sc-if>
+                  <button onClick="{{ e.onMenu }}" style="width:26px;height:26px;background:transparent;border:0;cursor:pointer;color:rgba(29,31,32,.5);font-size:15px;padding:0">···</button>
+                </div>
+              </div>
+              <button onClick="{{ e.onOpen }}" style="display:block;width:100%;text-align:left;background:transparent;border:0;padding:0;margin-top:9px;cursor:pointer;color:#1d1f20">
+                <div style="font-size:14px;line-height:1.5;color:rgba(29,31,32,.8);text-wrap:pretty">{{ e.note }}</div>
+                <div style="font-size:11px;color:rgba(29,31,32,.45);margin-top:8px;letter-spacing:.04em">{{ e.meta }}</div>
+              </button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ PROFILE ══ -->
+      <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+      <div class="binscroll" style="position:absolute;inset:0;overflow-y:auto;padding:2px 20px 24px">
+        <div style="display:flex;align-items:center;gap:14px;padding:14px 0 18px">
+          <div style="width:66px;height:66px;flex:none;border:1px solid rgba(29,31,32,.25);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:24px;letter-spacing:.04em">CD</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;line-height:1.05">Colombe Duval</div>
+            <div style="font-size:13px;color:rgba(29,31,32,.6);margin-top:3px;text-wrap:pretty">Collecting stamps. Some of them passport.</div>
+          </div>
+        </div>
+
+        <button onClick="{{ openFriends }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:12px 0;background:transparent;border:0;border-top:1px solid rgba(29,31,32,.16);border-bottom:1px solid rgba(29,31,32,.16);cursor:pointer;text-align:left">
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:22px">{{ friendCount }}</span>
+          <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(29,31,32,.55)">Friends</span>
+          <span style="flex:1"></span>
+          <span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#416180">View ›</span>
+        </button>
+
+        <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.5);margin:22px 0 10px">Your collection</div>
+        <div style="border:1px solid rgba(29,31,32,.18);display:flex">
+          <div style="flex:1;padding:12px 13px">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:30px;line-height:1">{{ beenCount }}</div>
+            <div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(29,31,32,.55);margin-top:4px">Countries</div>
+          </div>
+          <div style="width:1px;background:rgba(29,31,32,.16)"></div>
+          <div style="flex:1;padding:12px 13px">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:30px;line-height:1">{{ natCount }}</div>
+            <div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(29,31,32,.55);margin-top:4px">Nationalities</div>
+          </div>
+          <div style="width:1px;background:rgba(29,31,32,.16)"></div>
+          <div style="flex:1;padding:12px 13px">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:30px;line-height:1;color:{{ stampColor }}">{{ beenPct }}%</div>
+            <div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(29,31,32,.55);margin-top:4px">Of world</div>
+          </div>
+        </div>
+
+        <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.5);margin:26px 0 10px">Relationship map</div>
+        <div style="position:relative;border:1px solid rgba(89,128,166,.55);padding:14px">
+          <span style="position:absolute;top:-5.5px;left:-5.5px;width:11px;height:11px;background:linear-gradient(to right,transparent 5px,rgba(89,128,166,.7) 5px,rgba(89,128,166,.7) 6px,transparent 6px),linear-gradient(to bottom,transparent 5px,rgba(89,128,166,.7) 5px,rgba(89,128,166,.7) 6px,transparent 6px)"></span>
+          <span style="position:absolute;bottom:-5.5px;right:-5.5px;width:11px;height:11px;background:linear-gradient(to right,transparent 5px,rgba(89,128,166,.7) 5px,rgba(89,128,166,.7) 6px,transparent 6px),linear-gradient(to bottom,transparent 5px,rgba(89,128,166,.7) 5px,rgba(89,128,166,.7) 6px,transparent 6px)"></span>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:21px;letter-spacing:.02em">{{ relName }}</div>
+          <div style="font-size:12px;color:rgba(29,31,32,.6);margin-top:4px">{{ relSummary }}</div>
+          <div style="display:flex;gap:9px;margin-top:13px">
+            <button onClick="{{ openRel }}" style="flex:1;padding:10px;background:#5980a6;color:#fff;border:0;cursor:pointer;font-size:11px;letter-spacing:.14em;text-transform:uppercase" style-hover="background:#416180">Open map</button>
+            <button onClick="{{ openRelInvite }}" style="flex:1;padding:10px;background:transparent;color:#1d1f20;border:1px solid rgba(29,31,32,.28);cursor:pointer;font-size:11px;letter-spacing:.14em;text-transform:uppercase" style-hover="background:rgba(89,128,166,.08)">New map</button>
+          </div>
+        </div>
+
+        <div style="margin-top:26px;padding:12px 13px;border:1px solid rgba(29,31,32,.14);font-size:12px;line-height:1.6;color:rgba(29,31,32,.6);text-wrap:pretty">Your maps are yours alone. Friends see your wall posts, kudos and comments — never your maps, and never a partner's name.</div>
+      </div>
+      </sc-if>
+
+      <!-- ══ OVERLAY: POST DETAIL ══ -->
+      <sc-if value="{{ showDetail }}" hint-placeholder-val="{{ false }}">
+      <div class="binscroll" style="position:absolute;inset:0;background:#f2f2f3;z-index:6;overflow-y:auto">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 20px 12px;border-bottom:1px solid rgba(29,31,32,.14);position:sticky;top:0;background:#f2f2f3">
+          <button onClick="{{ closeOverlay }}" style="background:transparent;border:0;cursor:pointer;font-size:20px;line-height:1;padding:0;color:#1d1f20">‹</button>
+          <span style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.55)">{{ detail.headerLabel }}</span>
+        </div>
+        <div style="padding:16px 20px 26px">
+          <div style="display:flex;gap:11px;align-items:center">
+            <div style="width:40px;height:40px;flex:none;border:1px solid rgba(29,31,32,.25);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:16px">{{ detail.initials }}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:19px">{{ detail.who }}</div>
+              <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgba(29,31,32,.5)">{{ detail.route }}</div>
+            </div>
+            <div style="font-size:24px;line-height:1">{{ detail.emoji }}</div>
+          </div>
+          <div style="font-size:16px;line-height:1.6;margin-top:14px;text-wrap:pretty">{{ detail.note }}</div>
+          <sc-if value="{{ detail.photo }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:14px;height:190px;border:1px solid rgba(29,31,32,.18);background-image:repeating-linear-gradient(135deg,rgba(89,128,166,.14) 0 6px,transparent 6px 12px);display:flex;align-items:flex-end;padding:8px">
+              <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:rgba(29,31,32,.5);background:#f2f2f3;padding:2px 5px">photo</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ detail.showPartner }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:14px;padding:10px 12px;border:1px dashed rgba(29,31,32,.28);font-size:12px;color:rgba(29,31,32,.6)">Private to you — {{ detail.partner }}</div>
+          </sc-if>
+          <div style="font-size:11px;color:rgba(29,31,32,.45);margin-top:12px">{{ detail.when }}</div>
+
+          <div style="display:flex;align-items:center;gap:16px;margin-top:16px;padding:13px 0;border-top:1px solid rgba(29,31,32,.14);border-bottom:1px solid rgba(29,31,32,.14)">
+            <button onClick="{{ detail.onKudos }}" style="display:flex;align-items:center;gap:7px;background:transparent;border:0;padding:0;cursor:pointer;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:{{ detail.kudosColor }}">
+              <span style="width:10px;height:10px;transform:rotate(45deg);background:{{ detail.kudosFill }};border:1px solid {{ detail.kudosColor }}"></span>
+              <span>{{ detail.kudosLabel }}</span>
+            </button>
+            <span style="flex:1"></span>
+            <div style="display:flex;gap:5px">
+              <sc-for list="{{ detail.kudosPeople }}" as="k" hint-placeholder-count="3">
+                <span style="width:26px;height:26px;border:1px solid rgba(29,31,32,.25);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:11px">{{ k }}</span>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.5);margin:20px 0 12px">{{ detail.commentHeader }}</div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <sc-for list="{{ detail.comments }}" as="c" hint-placeholder-count="2">
+              <div style="display:flex;gap:10px">
+                <span style="width:28px;height:28px;flex:none;border:1px solid rgba(29,31,32,.25);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:12px">{{ c.initials }}</span>
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;gap:8px;align-items:baseline">
+                    <span style="font-family:'Barlow Condensed',sans-serif;font-size:16px">{{ c.who }}</span>
+                    <span style="font-size:10px;color:rgba(29,31,32,.42)">{{ c.when }}</span>
+                  </div>
+                  <div style="font-size:14px;line-height:1.5;color:rgba(29,31,32,.85)">{{ c.text }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:18px">
+            <input value="{{ commentDraft }}" onChange="{{ onCommentInput }}" placeholder="Say something kind…" style="flex:1;min-width:0;padding:10px 12px;border:1px solid rgba(29,31,32,.22);background:transparent;font-size:14px;color:#1d1f20;border-radius:0">
+            <button onClick="{{ submitComment }}" style="padding:10px 14px;background:#5980a6;color:#fff;border:0;cursor:pointer;font-size:11px;letter-spacing:.14em;text-transform:uppercase" style-hover="background:#416180">Post</button>
+          </div>
+          <div style="font-size:11px;color:rgba(29,31,32,.45);margin-top:10px;text-wrap:pretty">{{ detail.visibilityNote }}</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ OVERLAY: FRIENDS LIST ══ -->
+      <sc-if value="{{ showFriends }}" hint-placeholder-val="{{ false }}">
+      <div class="binscroll" style="position:absolute;inset:0;background:#f2f2f3;z-index:6;overflow-y:auto">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 20px 12px;border-bottom:1px solid rgba(29,31,32,.14);position:sticky;top:0;background:#f2f2f3">
+          <button onClick="{{ closeOverlay }}" style="background:transparent;border:0;cursor:pointer;font-size:20px;line-height:1;padding:0;color:#1d1f20">‹</button>
+          <span style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.55)">{{ friendsTitle }}</span>
+        </div>
+        <div style="padding:14px 20px 26px">
+          <input value="{{ friendQuery }}" onChange="{{ onFriendQuery }}" placeholder="Search friends" style="width:100%;padding:10px 12px;border:1px solid rgba(29,31,32,.22);background:transparent;font-size:14px;color:#1d1f20;border-radius:0;margin-bottom:14px">
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ friendList }}" as="f" hint-placeholder-count="5">
+              <button onClick="{{ f.onOpen }}" style="display:flex;align-items:center;gap:12px;padding:11px 0;background:transparent;border:0;border-bottom:1px solid rgba(29,31,32,.12);cursor:pointer;text-align:left;color:#1d1f20" style-hover="background:rgba(89,128,166,.06)">
+                <span style="width:36px;height:36px;flex:none;border:1px solid rgba(29,31,32,.25);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:14px">{{ f.initials }}</span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-family:'Barlow Condensed',sans-serif;font-size:18px">{{ f.name }}</span>
+                  <span style="display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(29,31,32,.48)">{{ f.status }}</span>
+                </span>
+                <span style="font-size:14px;color:rgba(29,31,32,.4)">›</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ OVERLAY: SOMEONE'S PROFILE ══ -->
+      <sc-if value="{{ showPerson }}" hint-placeholder-val="{{ false }}">
+      <div class="binscroll" style="position:absolute;inset:0;background:#f2f2f3;z-index:7;overflow-y:auto">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 20px 12px;border-bottom:1px solid rgba(29,31,32,.14);position:sticky;top:0;background:#f2f2f3">
+          <button onClick="{{ backFromPerson }}" style="background:transparent;border:0;cursor:pointer;font-size:20px;line-height:1;padding:0;color:#1d1f20">‹</button>
+          <span style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.55)">Profile</span>
+        </div>
+        <div style="padding:18px 20px 26px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:60px;height:60px;flex:none;border:1px solid rgba(29,31,32,.25);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:22px">{{ person.initials }}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:25px;line-height:1.05">{{ person.name }}</div>
+              <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgba(29,31,32,.5);margin-top:3px">{{ person.status }}</div>
+            </div>
+          </div>
+
+          <sc-if value="{{ person.isStranger }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ addFriend }}" style="width:100%;margin-top:18px;padding:12px;background:#5980a6;color:#fff;border:0;cursor:pointer;font-size:11px;letter-spacing:.16em;text-transform:uppercase" style-hover="background:#416180">{{ person.cta }}</button>
+            <div style="margin-top:16px;padding:14px;border:1px dashed rgba(29,31,32,.24);font-size:13px;line-height:1.6;color:rgba(29,31,32,.6);text-wrap:pretty">Nothing else until you're friends. Send a request — one accept from either side and you're both in.</div>
+          </sc-if>
+
+          <sc-if value="{{ person.isFriend }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ person.onFriends }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:12px 0;margin-top:16px;background:transparent;border:0;border-top:1px solid rgba(29,31,32,.16);border-bottom:1px solid rgba(29,31,32,.16);cursor:pointer;text-align:left">
+              <span style="font-family:'Barlow Condensed',sans-serif;font-size:20px">{{ person.friendCount }}</span>
+              <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(29,31,32,.55)">Friends</span>
+              <span style="flex:1"></span>
+              <span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#416180">View ›</span>
+            </button>
+            <div style="display:flex;align-items:center;gap:8px;margin:20px 0 12px">
+              <span style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.5)">Wall</span>
+              <span style="flex:1;height:1px;background:rgba(29,31,32,.14)"></span>
+              <span style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(29,31,32,.4)">Map stays private</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <sc-for list="{{ person.posts }}" as="q" hint-placeholder-count="2">
+                <button onClick="{{ q.onOpen }}" style="text-align:left;border:1px solid rgba(29,31,32,.18);padding:12px 13px;background:transparent;cursor:pointer;color:#1d1f20" style-hover="background:rgba(89,128,166,.05)">
+                  <span style="display:flex;align-items:center;gap:10px">
+                    <span style="flex:1;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgba(29,31,32,.5)">{{ q.route }}</span>
+                    <span style="font-size:18px">{{ q.emoji }}</span>
+                  </span>
+                  <span style="display:block;font-size:14px;line-height:1.5;margin-top:7px">{{ q.note }}</span>
+                  <span style="display:block;font-size:11px;color:rgba(29,31,32,.42);margin-top:7px">{{ q.when }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ OVERLAY: RELATIONSHIP MAP ══ -->
+      <sc-if value="{{ showRel }}" hint-placeholder-val="{{ false }}">
+      <div class="binscroll" style="position:absolute;inset:0;background:#f2f2f3;z-index:6;overflow-y:auto">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 20px 12px;border-bottom:1px solid rgba(29,31,32,.14);position:sticky;top:0;background:#f2f2f3;z-index:2">
+          <button onClick="{{ closeOverlay }}" style="background:transparent;border:0;cursor:pointer;font-size:20px;line-height:1;padding:0;color:#1d1f20">‹</button>
+          <span style="flex:1;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#416180">Shared map</span>
+          <button onClick="{{ startRename }}" style="background:transparent;border:0;cursor:pointer;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(29,31,32,.55);padding:0">Rename</button>
+        </div>
+        <div style="padding:16px 20px 26px">
+          <sc-if value="{{ renaming }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:8px;margin-bottom:14px">
+              <input value="{{ relDraft }}" onChange="{{ onRelDraft }}" style="flex:1;min-width:0;padding:10px 12px;border:1px solid rgba(89,128,166,.6);background:transparent;font-size:16px;font-family:'Barlow Condensed',sans-serif;color:#1d1f20;border-radius:0">
+              <button onClick="{{ saveRename }}" style="padding:10px 14px;background:#5980a6;color:#fff;border:0;cursor:pointer;font-size:11px;letter-spacing:.14em;text-transform:uppercase">Save</button>
+            </div>
+          </sc-if>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:29px;line-height:1.05">{{ relName }}</div>
+          <div style="display:flex;align-items:center;gap:7px;margin-top:8px">
+            <span style="width:26px;height:26px;border:1px solid rgba(29,31,32,.25);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:11px">CD</span>
+            <span style="width:26px;height:26px;border:1px solid rgba(29,31,32,.25);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:11px">AM</span>
+            <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(29,31,32,.5)">Two of you · either can add</span>
+          </div>
+
+          <div style="position:relative;border:1px solid rgba(89,128,166,.55);height:250px;margin-top:16px;padding:12px">
+            <span style="position:absolute;top:-5.5px;left:-5.5px;width:11px;height:11px;background:linear-gradient(to right,transparent 5px,rgba(89,128,166,.7) 5px,rgba(89,128,166,.7) 6px,transparent 6px),linear-gradient(to bottom,transparent 5px,rgba(89,128,166,.7) 5px,rgba(89,128,166,.7) 6px,transparent 6px)"></span>
+            <span style="position:absolute;bottom:-5.5px;right:-5.5px;width:11px;height:11px;background:linear-gradient(to right,transparent 5px,rgba(89,128,166,.7) 5px,rgba(89,128,166,.7) 6px,transparent 6px),linear-gradient(to bottom,transparent 5px,rgba(89,128,166,.7) 5px,rgba(89,128,166,.7) 6px,transparent 6px)"></span>
+            <x-import component-from-global-scope="world-map" from="./world-map.js" logged="{{ relLogged }}" fill="{{ stampColor }}" hint-size="100%,100%"></x-import>
+          </div>
+
+          <div style="border:1px solid rgba(29,31,32,.18);display:flex;margin-top:20px">
+            <div style="flex:1;padding:13px 15px">
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:38px;line-height:.95">{{ relCount }}</div>
+              <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(29,31,32,.55);margin-top:5px">Together in</div>
+            </div>
+            <div style="width:1px;background:rgba(29,31,32,.16)"></div>
+            <div style="flex:1;padding:13px 15px">
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:38px;line-height:.95;color:{{ stampColor }}">{{ relPct }}%</div>
+              <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(29,31,32,.55);margin-top:5px">Of the world</div>
+            </div>
+          </div>
+
+          <button onClick="{{ openAddRel }}" style="width:100%;margin-top:16px;padding:13px;background:#5980a6;color:#fff;border:0;cursor:pointer;font-size:11px;letter-spacing:.16em;text-transform:uppercase" style-hover="background:#416180">Add a country</button>
+
+          <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.5);margin:24px 0 10px">Stamps</div>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ relList }}" as="r" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid rgba(29,31,32,.12)">
+                <span style="font-family:'Barlow Condensed',sans-serif;font-size:19px;flex:1">{{ r.country }}</span>
+                <span style="font-size:17px">{{ r.emoji }}</span>
+                <span style="font-size:11px;color:rgba(29,31,32,.45);letter-spacing:.04em">{{ r.meta }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top:22px;padding:12px 13px;border:1px solid rgba(29,31,32,.14);font-size:12px;line-height:1.6;color:rgba(29,31,32,.6);text-wrap:pretty">{{ relStatsNote }}</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ OVERLAY: NEW SHARED MAP INVITE ══ -->
+      <sc-if value="{{ showRelInvite }}" hint-placeholder-val="{{ false }}">
+      <div class="binscroll" style="position:absolute;inset:0;background:#f2f2f3;z-index:8;overflow-y:auto">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 20px 12px;border-bottom:1px solid rgba(29,31,32,.14)">
+          <button onClick="{{ closeOverlay }}" style="background:transparent;border:0;cursor:pointer;font-size:20px;line-height:1;padding:0;color:#1d1f20">‹</button>
+          <span style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.55)">New shared map</span>
+        </div>
+        <div style="padding:18px 20px 26px">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:25px;line-height:1.1">Invite a friend</div>
+          <div style="font-size:13px;color:rgba(29,31,32,.6);margin-top:6px;text-wrap:pretty">They have to accept before the map exists. Only the two of you will ever see it.</div>
+          <sc-if value="{{ invitePending }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:18px;padding:14px;border:1px solid rgba(89,128,166,.55);font-size:14px">
+              <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#416180">Invite sent</div>
+              <div style="margin-top:6px">{{ inviteName }} gets to decide. No map until they say yes.</div>
+            </div>
+          </sc-if>
+          <div style="display:flex;flex-direction:column;margin-top:18px">
+            <sc-for list="{{ inviteCandidates }}" as="f" hint-placeholder-count="4">
+              <button onClick="{{ f.onInvite }}" style="display:flex;align-items:center;gap:12px;padding:11px 0;background:transparent;border:0;border-bottom:1px solid rgba(29,31,32,.12);cursor:pointer;text-align:left;color:#1d1f20" style-hover="background:rgba(89,128,166,.06)">
+                <span style="width:34px;height:34px;flex:none;border:1px solid rgba(29,31,32,.25);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:13px">{{ f.initials }}</span>
+                <span style="flex:1;font-family:'Barlow Condensed',sans-serif;font-size:18px">{{ f.name }}</span>
+                <span style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#416180">{{ f.action }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ SHEET: POST MENU ══ -->
+      <sc-if value="{{ showSheet }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;z-index:9;background:rgba(29,31,32,.32);display:flex;flex-direction:column;justify-content:flex-end">
+        <div style="background:#f2f2f3;border-top:1px solid rgba(29,31,32,.2);padding:8px 0 12px">
+          <div style="padding:10px 20px 8px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.5)">{{ sheet.title }}</div>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ sheet.actions }}" as="a" hint-placeholder-count="2">
+              <button onClick="{{ a.onPick }}" style="text-align:left;padding:13px 20px;background:transparent;border:0;border-top:1px solid rgba(29,31,32,.12);cursor:pointer;font-size:15px;color:{{ a.color }}" style-hover="background:rgba(89,128,166,.07)">{{ a.label }}</button>
+            </sc-for>
+            <button onClick="{{ closeSheet }}" style="text-align:left;padding:13px 20px;background:transparent;border:0;border-top:1px solid rgba(29,31,32,.12);cursor:pointer;font-size:15px;color:rgba(29,31,32,.55)">Cancel</button>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ TOAST ══ -->
+      <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:20px;right:20px;bottom:18px;z-index:12;background:#1d1f20;color:#f2f2f3;padding:11px 14px;font-size:13px;letter-spacing:.01em;text-wrap:pretty">{{ toast }}</div>
+      </sc-if>
+
+    </div>
+
+    <!-- ══ TAB BAR ══ -->
+    <div style="height:66px;flex:none;display:flex;border-top:1px solid rgba(29,31,32,.18);background:#f2f2f3">
+      <button onClick="{{ tabMap }}" style="flex:1;background:transparent;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:0;color:{{ cMap }}">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18"></path><path d="M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"></path></svg>
+        <span style="font-size:9px;letter-spacing:.14em;text-transform:uppercase">Map</span>
+      </button>
+      <button onClick="{{ tabFeed }}" style="flex:1;background:transparent;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:0;color:{{ cFeed }}">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h10"></path></svg>
+        <span style="font-size:9px;letter-spacing:.14em;text-transform:uppercase">Feed</span>
+      </button>
+      <button onClick="{{ tabHistory }}" style="flex:1;background:transparent;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:0;color:{{ cHistory }}">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+        <span style="font-size:9px;letter-spacing:.14em;text-transform:uppercase">History</span>
+      </button>
+      <button onClick="{{ tabProfile }}" style="flex:1;background:transparent;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:0;color:{{ cProfile }}">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="9" r="3.4"></circle><path d="M5.5 20a6.5 6.5 0 0 1 13 0"></path></svg>
+        <span style="font-size:9px;letter-spacing:.14em;text-transform:uppercase">Profile</span>
+      </button>
+    </div>
+
+    <!-- ══ ADD ENTRY FLOW (covers the whole phone) ══ -->
+    <sc-if value="{{ showAdd }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:20;background:#f2f2f3;display:flex;flex-direction:column">
+      <div style="flex:none;display:flex;align-items:center;gap:12px;padding:14px 20px 12px;border-bottom:1px solid rgba(29,31,32,.14)">
+        <button onClick="{{ addBack }}" style="background:transparent;border:0;cursor:pointer;font-size:20px;line-height:1;padding:0;color:#1d1f20">‹</button>
+        <span style="flex:1;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.55)">{{ addTitle }}</span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:.1em;color:rgba(29,31,32,.5)">{{ addStepLabel }}</span>
+      </div>
+      <div style="flex:none;height:2px;background:rgba(29,31,32,.12)"><div style="height:100%;background:#5980a6;transition:width .3s;width:{{ addProgress }}"></div></div>
+
+      <div class="binscroll" style="flex:1;overflow-y:auto;padding:18px 20px 22px">
+
+        <sc-if value="{{ atStep1 }}" hint-placeholder-val="{{ true }}">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;line-height:1.1">Where, and whose flag?</div>
+          <div style="font-size:13px;color:rgba(29,31,32,.6);margin-top:6px;text-wrap:pretty">{{ step1Sub }}</div>
+
+          <sc-if value="{{ wantsNationality }}" hint-placeholder-val="{{ true }}">
+            <div style="margin-top:20px">
+              <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.5);margin-bottom:7px">Nationality</div>
+              <button onClick="{{ openNatPicker }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:12px;background:transparent;border:1px solid rgba(29,31,32,.22);cursor:pointer;text-align:left;color:#1d1f20" style-hover="background:rgba(89,128,166,.06)">
+                <span style="flex:1;font-size:15px;color:{{ natColor }}">{{ natValue }}</span>
+                <span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#416180">Search</span>
+              </button>
+            </div>
+          </sc-if>
+
+          <div style="margin-top:16px">
+            <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.5);margin-bottom:7px">Country</div>
+            <button onClick="{{ openCountryPicker }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:12px;background:transparent;border:1px solid rgba(29,31,32,.22);cursor:pointer;text-align:left;color:#1d1f20" style-hover="background:rgba(89,128,166,.06)">
+              <span style="flex:1;font-size:15px;color:{{ countryColor }}">{{ countryValue }}</span>
+              <span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#416180">Search</span>
+            </button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ atStep2 }}" hint-placeholder-val="{{ false }}">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;line-height:1.1">For your records only</div>
+          <div style="font-size:13px;color:rgba(29,31,32,.6);margin-top:6px;text-wrap:pretty">The name never leaves this screen. Not on your wall, not to friends, not ever.</div>
+
+          <div style="margin-top:20px">
+            <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.5);margin-bottom:7px">Name · private</div>
+            <input value="{{ draftName }}" onChange="{{ onDraftName }}" placeholder="Only you will see this" style="width:100%;padding:12px;border:1px solid rgba(29,31,32,.22);background:transparent;font-size:15px;color:#1d1f20;border-radius:0">
+          </div>
+          <div style="margin-top:16px">
+            <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.5);margin-bottom:7px">Note · optional</div>
+            <textarea value="{{ draftNote }}" onChange="{{ onDraftNote }}" rows="3" placeholder="One line you'll want to reread" style="width:100%;padding:12px;border:1px solid rgba(29,31,32,.22);background:transparent;font-size:15px;color:#1d1f20;border-radius:0;resize:none;line-height:1.5"></textarea>
+          </div>
+          <div style="margin-top:16px">
+            <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.5);margin-bottom:9px">Emoji</div>
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
+              <sc-for list="{{ emojiOptions }}" as="em" hint-placeholder-count="12">
+                <button onClick="{{ em.onPick }}" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:22px;background:{{ em.bg }};border:1px solid {{ em.border }};cursor:pointer;padding:0">{{ em.char }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ atStep3 }}" hint-placeholder-val="{{ false }}">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;line-height:1.1">Who gets to know?</div>
+          <div style="font-size:13px;color:rgba(29,31,32,.6);margin-top:6px;text-wrap:pretty">Off means it lives on your map and in your history, and nowhere else.</div>
+
+          <div style="margin-top:20px">
+            <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.5);margin-bottom:7px">Photo · optional</div>
+            <button onClick="{{ togglePhoto }}" style="width:100%;height:126px;border:1px solid rgba(29,31,32,.22);background-image:{{ photoBg }};cursor:pointer;display:flex;align-items:center;justify-content:center;color:#1d1f20" style-hover="background-color:rgba(89,128,166,.06)">
+              <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:rgba(29,31,32,.55);background:#f2f2f3;padding:3px 7px">{{ photoLabel }}</span>
+            </button>
+            <div style="font-size:11px;line-height:1.55;color:rgba(29,31,32,.5);margin-top:8px;text-wrap:pretty">Keep it well-intentioned — photos containing pornographic or illicit content will get your account taken down.</div>
+          </div>
+
+          <button onClick="{{ toggleShare }}" style="width:100%;display:flex;align-items:center;gap:12px;margin-top:20px;padding:14px 13px;background:transparent;border:1px solid {{ shareBorder }};cursor:pointer;text-align:left;color:#1d1f20">
+            <span style="flex:1">
+              <span style="display:block;font-family:'Barlow Condensed',sans-serif;font-size:19px">Share to your wall</span>
+              <span style="display:block;font-size:12px;color:rgba(29,31,32,.55);margin-top:2px">{{ shareHint }}</span>
+            </span>
+            <span style="width:44px;height:24px;flex:none;border:1px solid {{ shareBorder }};background:{{ shareTrack }};position:relative;display:block">
+              <span style="position:absolute;top:2px;left:{{ shareKnob }};width:18px;height:18px;background:{{ shareKnobBg }};transition:left .18s"></span>
+            </span>
+          </button>
+
+          <div style="margin-top:20px;padding:13px;border:1px solid rgba(29,31,32,.16);font-size:13px;line-height:1.6">
+            <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.5);margin-bottom:6px">Summary</div>
+            <div>{{ draftSummary }}</div>
+          </div>
+        </sc-if>
+
+      </div>
+
+      <div style="flex:none;padding:14px 20px 20px;border-top:1px solid rgba(29,31,32,.14);display:flex;gap:10px">
+        <sc-if value="{{ canGoBack }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ addBack }}" style="padding:14px 18px;background:transparent;color:#1d1f20;border:1px solid rgba(29,31,32,.28);cursor:pointer;font-size:11px;letter-spacing:.16em;text-transform:uppercase" style-hover="background:rgba(89,128,166,.07)">Back</button>
+        </sc-if>
+        <button onClick="{{ addNext }}" disabled="{{ addBlocked }}" style="flex:1;padding:14px;background:{{ nextBg }};color:#fff;border:0;cursor:pointer;font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:{{ nextOpacity }}">{{ addNextLabel }}</button>
+      </div>
+
+      <!-- picker sheet -->
+      <sc-if value="{{ pickerOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:4;background:#f2f2f3;display:flex;flex-direction:column">
+        <div style="flex:none;display:flex;align-items:center;gap:12px;padding:14px 20px 12px;border-bottom:1px solid rgba(29,31,32,.14)">
+          <button onClick="{{ closePicker }}" style="background:transparent;border:0;cursor:pointer;font-size:20px;line-height:1;padding:0;color:#1d1f20">‹</button>
+          <span style="flex:1;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(29,31,32,.55)">{{ pickerTitle }}</span>
+        </div>
+        <div style="flex:none;padding:12px 20px">
+          <input value="{{ pickerQuery }}" onChange="{{ onPickerQuery }}" placeholder="Type to narrow it down" style="width:100%;padding:12px;border:1px solid rgba(29,31,32,.22);background:transparent;font-size:15px;color:#1d1f20;border-radius:0">
+        </div>
+        <div class="binscroll" style="flex:1;overflow-y:auto;padding:0 20px 20px">
+          <sc-for list="{{ pickerOptions }}" as="o" hint-placeholder-count="8">
+            <button onClick="{{ o.onPick }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:12px 0;background:transparent;border:0;border-bottom:1px solid rgba(29,31,32,.12);cursor:pointer;text-align:left;color:#1d1f20" style-hover="background:rgba(89,128,166,.06)">
+              <span style="flex:1;font-size:15px">{{ o.label }}</span>
+              <span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:{{ o.tickColor }}">{{ o.tick }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+    </div>
+    </sc-if>
+
+  </div>
+
+  <div style="max-width:390px;font-size:11px;line-height:1.7;color:rgba(29,31,32,.5);text-align:center;text-wrap:pretty">Swipe the map horizontally to flip Been ⇄ Been In. Everything is tappable: + to log an entry, the chip for the shared map, kudos, comments, three-dot menus, friends lists.</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;stampColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#cf3a2c&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#cf3a2c&quot;,&quot;#b3271c&quot;,&quot;#5980a6&quot;,&quot;#1d1f20&quot;],&quot;section&quot;:&quot;Map&quot;},&quot;relCountsToPersonal&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Open question&quot;}}">
+class Component extends DCLogic {
+  static WORLD = 195;
+
+  static PAIRS = [
+    ['Afghanistan','Afghan'],['Albania','Albanian'],['Algeria','Algerian'],['Argentina','Argentinian'],
+    ['Armenia','Armenian'],['Australia','Australian'],['Austria','Austrian'],['Bangladesh','Bangladeshi'],
+    ['Belgium','Belgian'],['Bolivia','Bolivian'],['Brazil','Brazilian'],['Bulgaria','Bulgarian'],
+    ['Cambodia','Cambodian'],['Cameroon','Cameroonian'],['Canada','Canadian'],['Chile','Chilean'],
+    ['China','Chinese'],['Colombia','Colombian'],['Costa Rica','Costa Rican'],['Croatia','Croatian'],
+    ['Cuba','Cuban'],['Czechia','Czech'],['Denmark','Danish'],['Ecuador','Ecuadorian'],
+    ['Egypt','Egyptian'],['Estonia','Estonian'],['Ethiopia','Ethiopian'],['Finland','Finnish'],
+    ['France','French'],['Georgia','Georgian'],['Germany','German'],['Ghana','Ghanaian'],
+    ['Greece','Greek'],['Hungary','Hungarian'],['Iceland','Icelandic'],['India','Indian'],
+    ['Indonesia','Indonesian'],['Iran','Iranian'],['Ireland','Irish'],['Israel','Israeli'],
+    ['Italy','Italian'],['Jamaica','Jamaican'],['Japan','Japanese'],['Jordan','Jordanian'],
+    ['Kenya','Kenyan'],['Latvia','Latvian'],['Lebanon','Lebanese'],['Lithuania','Lithuanian'],
+    ['Malaysia','Malaysian'],['Mexico','Mexican'],['Morocco','Moroccan'],['Nepal','Nepali'],
+    ['Netherlands','Dutch'],['New Zealand','New Zealander'],['Nigeria','Nigerian'],['Norway','Norwegian'],
+    ['Pakistan','Pakistani'],['Panama','Panamanian'],['Peru','Peruvian'],['Philippines','Filipino'],
+    ['Poland','Polish'],['Portugal','Portuguese'],['Romania','Romanian'],['Senegal','Senegalese'],
+    ['Serbia','Serbian'],['Singapore','Singaporean'],['Slovakia','Slovak'],['Slovenia','Slovenian'],
+    ['South Africa','South African'],['South Korea','Korean'],['Spain','Spanish'],['Sri Lanka','Sri Lankan'],
+    ['Sweden','Swedish'],['Switzerland','Swiss'],['Tanzania','Tanzanian'],['Thailand','Thai'],
+    ['Tunisia','Tunisian'],['Turkey','Turkish'],['Ukraine','Ukrainian'],['United Kingdom','British'],
+    ['United States','American'],['Uruguay','Uruguayan'],['Vietnam','Vietnamese']
+  ];
+
+  static EMOJI = ['\u{1F60F}','\u{1F525}','\u{1F48B}','\u{1F608}','\u{1F336}\u{FE0F}','\u2728','\u{1F942}','\u{1F319}','\u{1F389}','\u{1F4AB}','\u26A1\u{FE0F}','\u{1F37E}'];
+
+  state = {
+    tab: 'map',
+    side: 0,
+    dragX: 0,
+    overlay: null,
+    person: null,
+    personBack: null,
+    detailId: null,
+    detailKind: null,
+    friendQuery: '',
+    friendsOf: null,
+    commentDraft: '',
+    sheet: null,
+    toast: '',
+    renaming: false,
+    relDraft: '',
+    relName: 'Colombe & Alex',
+    invitePending: null,
+    add: null,
+    picker: null,
+    pickerQuery: '',
+    entries: [
+      { id: 'e1', country: 'Vietnam', nationality: 'Vietnamese', name: 'Linh', note: 'Monsoon rain, no complaints.', emoji: '\u{1F60F}', photo: false, pub: true, when: '4 days ago', kudos: ['PR', 'NO'], iK: false, comments: [{ who: 'Priya Raman', initials: 'PR', text: 'Weather permitting.', when: '3d' }] },
+      { id: 'e2', country: 'Japan', nationality: 'Colombian', name: 'Camila', note: 'Met at a listening bar in Shibuya. Stayed for the B-side.', emoji: '\u2728', photo: true, pub: true, when: '2 weeks ago', kudos: ['AM'], iK: false, comments: [] },
+      { id: 'e3', country: 'Colombia', nationality: 'Colombian', name: 'Camila', note: 'Cartagena, week two. She warned me about the heat.', emoji: '\u{1F336}\u{FE0F}', photo: false, pub: false, when: '2 months ago', kudos: [], iK: false, comments: [] },
+      { id: 'e4', country: 'Portugal', nationality: 'Portuguese', name: 'Tom\u00E1s', note: 'Rooftop in Alfama. Worth the hill.', emoji: '\u{1F319}', photo: false, pub: true, when: '5 months ago', kudos: ['NO', 'JW', 'TL'], iK: true, comments: [{ who: 'Nadia Osei', initials: 'NO', text: 'That hill is no joke.', when: '5mo' }] },
+      { id: 'e5', country: 'Iceland', nationality: 'Australian', name: 'Marcus', note: 'Nothing to see here except the northern lights.', emoji: '\u26A1\u{FE0F}', photo: false, pub: false, when: '8 months ago', kudos: [], iK: false, comments: [] },
+      { id: 'e6', country: 'France', nationality: 'French', name: '\u00C9lise', note: 'Long lunch, longer afternoon.', emoji: '\u{1F942}', photo: false, pub: true, when: '1 year ago', kudos: ['PR'], iK: false, comments: [] }
+    ],
+    relEntries: [
+      { id: 'r1', country: 'Morocco', emoji: '\u{1F31F}', by: 'Alex', when: '5 hours ago' },
+      { id: 'r2', country: 'Spain', emoji: '\u{1F942}', by: 'Colombe', when: '3 weeks ago' },
+      { id: 'r3', country: 'Mexico', emoji: '\u{1F525}', by: 'Alex', when: '4 months ago' }
+    ],
+    feed: [
+      { id: 'f1', who: 'Priya Raman', initials: 'PR', nationality: 'Greek', country: 'Greece', note: 'Ferry delayed. Ferry forgiven.', emoji: '\u{1F525}', photo: false, when: '2h', kudos: ['NO', 'JW', 'CD', 'TL'], iK: false, comments: [{ who: 'Nadia Osei', initials: 'NO', text: 'The ferry always wins.', when: '1h' }, { who: 'Jonas Weber', initials: 'JW', text: 'Kudos, genuinely.', when: '40m' }] },
+      { id: 'f2', who: 'Alex Moreau', initials: 'AM', isRel: true, country: 'Morocco', mapName: 'Colombe & Alex', when: '5h' },
+      { id: 'f3', who: 'Jonas Weber', initials: 'JW', nationality: 'Brazilian', country: 'Brazil', note: 'Carnival math checks out.', emoji: '\u{1F608}', photo: true, when: '1d', kudos: ['PR'], iK: false, comments: [] },
+      { id: 'f4', who: 'Nadia Osei', initials: 'NO', nationality: 'Italian', country: 'Italy', note: 'He cooked. Then he cooked.', emoji: '\u{1F4AB}', photo: false, when: '2d', kudos: ['CD', 'TL'], iK: true, comments: [{ who: 'Priya Raman', initials: 'PR', text: 'A man with a stockpot.', when: '2d' }] },
+      { id: 'f5', who: 'Theo Lindqvist', initials: 'TL', nationality: 'Thai', country: 'Thailand', note: 'Full moon, half a plan.', emoji: '\u{1F319}', photo: false, when: '3d', kudos: [], iK: false, comments: [] }
+    ],
+    friends: [
+      { name: 'Alex Moreau', initials: 'AM', friends: 64, friend: true, status: 'Shared map with you' },
+      { name: 'Priya Raman', initials: 'PR', friends: 121, friend: true, status: 'Friends since 2024' },
+      { name: 'Jonas Weber', initials: 'JW', friends: 88, friend: true, status: 'Friends since 2025' },
+      { name: 'Nadia Osei', initials: 'NO', friends: 203, friend: true, status: 'Friends since 2023' },
+      { name: 'Theo Lindqvist', initials: 'TL', friends: 41, friend: true, status: 'Friends since 2026' },
+      { name: 'Marta Silva', initials: 'MS', friends: 57, friend: false, status: 'Not a friend yet' },
+      { name: 'Idris Bello', initials: 'IB', friends: 19, friend: false, status: 'Not a friend yet' }
+    ]
+  };
+
+  // ── helpers ───────────────────────────────────────────────
+  natToCountry(nat) {
+    const hit = Component.PAIRS.find(p => p[1] === nat);
+    return hit ? hit[0] : nat;
+  }
+  pct(n) { return (n / Component.WORLD * 100).toFixed(1); }
+  toast(msg) {
+    clearTimeout(this._t);
+    this.setState({ toast: msg });
+    this._t = setTimeout(() => this.setState({ toast: '' }), 2600);
+  }
+  beenCountries() {
+    const s = new Set(this.state.entries.map(e => e.country));
+    if (this.props.relCountsToPersonal) this.state.relEntries.forEach(r => s.add(r.country));
+    return [...s];
+  }
+  natCountries() { return [...new Set(this.state.entries.map(e => this.natToCountry(e.nationality)))]; }
+  relCountries() { return [...new Set(this.state.relEntries.map(r => r.country))]; }
+
+  // ── swipe ─────────────────────────────────────────────────
+  onDown = e => { this._x0 = e.clientX; this._drag = true; };
+  onMove = e => {
+    if (!this._drag) return;
+    const dx = Math.max(-160, Math.min(160, e.clientX - this._x0));
+    this.setState({ dragX: dx });
+  };
+  onUp = () => {
+    if (!this._drag) return;
+    this._drag = false;
+    const dx = this.state.dragX;
+    let side = this.state.side;
+    if (dx < -55 && side === 0) side = 1;
+    if (dx > 55 && side === 1) side = 0;
+    this.setState({ side, dragX: 0 });
+  };
+
+  // ── add flow ──────────────────────────────────────────────
+  openAdd = (rel) => this.setState({
+    overlay: null,
+    add: { step: 1, rel: rel === true, nationality: '', country: '', name: '', note: '', emoji: '', photo: false, pub: true }
+  });
+  patchAdd = p => this.setState(s => ({ add: Object.assign({}, s.add, p) }));
+  addBack = () => {
+    const a = this.state.add;
+    if (a.step === 1) return this.setState({ add: null });
+    this.patchAdd({ step: a.step - 1 });
+  };
+  addNext = () => {
+    const a = this.state.add;
+    if (a.step < 3) return this.patchAdd({ step: a.step + 1 });
+    this.publish();
+  };
+  publish() {
+    const a = this.state.add;
+    if (a.rel) {
+      const r = { id: 'r' + Date.now(), country: a.country, emoji: a.emoji || '\u2728', by: 'Colombe', when: 'Just now' };
+      this.setState(s => ({ relEntries: [r].concat(s.relEntries), add: null, overlay: 'rel' }));
+      if (a.pub) this.setState(s => ({ feed: [{ id: 'f' + Date.now(), who: 'Colombe Duval', initials: 'CD', isRel: true, country: a.country, mapName: s.relName, when: 'now' }].concat(s.feed) }));
+      this.toast('Stamped on ' + this.state.relName + '. ' + a.country + ' is yours together.');
+      return;
+    }
+    const e = {
+      id: 'e' + Date.now(), country: a.country, nationality: a.nationality, name: a.name,
+      note: a.note || '', emoji: a.emoji || '\u2728', photo: a.photo, pub: a.pub,
+      when: 'Just now', kudos: [], iK: false, comments: []
+    };
+    this.setState(s => ({ entries: [e].concat(s.entries), add: null, tab: 'map', side: 0 }));
+    this.toast(a.pub ? a.country + ' is red. Your friends will hear about it.' : a.country + ' is red. Nobody else knows.');
+  }
+
+  // ── picker ────────────────────────────────────────────────
+  openPicker = kind => this.setState({ picker: kind, pickerQuery: '' });
+  closePicker = () => this.setState({ picker: null, pickerQuery: '' });
+
+  // ── social ────────────────────────────────────────────────
+  toggleFeedKudos = id => this.setState(s => ({
+    feed: s.feed.map(p => p.id !== id ? p : Object.assign({}, p, { iK: !p.iK, kudos: p.iK ? p.kudos.filter(k => k !== 'CD') : p.kudos.concat('CD') }))
+  }));
+  toggleMyKudos = id => this.setState(s => ({
+    entries: s.entries.map(p => p.id !== id ? p : Object.assign({}, p, { iK: !p.iK, kudos: p.iK ? p.kudos.filter(k => k !== 'CD') : p.kudos.concat('CD') }))
+  }));
+  submitComment = () => {
+    const text = this.state.commentDraft.trim();
+    if (!text) return;
+    const c = { who: 'Colombe Duval', initials: 'CD', text, when: 'now' };
+    const id = this.state.detailId;
+    if (this.state.detailKind === 'feed') {
+      this.setState(s => ({ feed: s.feed.map(p => p.id !== id ? p : Object.assign({}, p, { comments: p.comments.concat(c) })), commentDraft: '' }));
+    } else {
+      this.setState(s => ({ entries: s.entries.map(p => p.id !== id ? p : Object.assign({}, p, { comments: p.comments.concat(c) })), commentDraft: '' }));
+    }
+  };
+  openDetail = (kind, id) => this.setState({ overlay: 'detail', detailKind: kind, detailId: id, commentDraft: '' });
+  openPerson = (name, back) => {
+    const f = this.state.friends.find(x => x.name === name) || { name, initials: name.split(' ').map(w => w[0]).join(''), friends: 0, friend: false, status: 'Not a friend yet' };
+    this.setState({ person: f, personBack: back || null, overlay: 'person' });
+  };
+  addFriend = () => {
+    const p = this.state.person;
+    this.setState(s => ({
+      friends: s.friends.map(f => f.name === p.name ? Object.assign({}, f, { friend: true, status: 'Friends since today' }) : f),
+      person: Object.assign({}, p, { friend: true, status: 'Friends since today' })
+    }));
+    this.toast('You and ' + p.name.split(' ')[0] + ' are friends. Both ways, instantly.');
+  };
+  closeOverlay = () => this.setState({ overlay: null, sheet: null, friendsOf: null, renaming: false });
+
+  // ── sheets ────────────────────────────────────────────────
+  openFeedMenu = p => this.setState({
+    sheet: {
+      title: p.who + '\u2019s post',
+      actions: [{ label: 'Report this post', color: '#a8342a', kind: 'report' }]
+    }, sheetTarget: p.id
+  });
+  openMineMenu = e => this.setState({
+    sheet: {
+      title: e.country + ' \u00B7 ' + e.when,
+      actions: [
+        { label: e.pub ? 'Make private' : 'Share to your wall', kind: 'vis' },
+        { label: 'Delete entry', color: '#a8342a', kind: 'del' }
+      ]
+    }, sheetTarget: e.id
+  });
+  pickSheet = kind => {
+    const id = this.state.sheetTarget;
+    this.setState({ sheet: null });
+    if (kind === 'report') this.toast('Reported. We\u2019ll take it from here \u2014 quietly.');
+    if (kind === 'vis') {
+      let nowPub = false;
+      this.setState(s => ({ entries: s.entries.map(e => { if (e.id !== id) return e; nowPub = !e.pub; return Object.assign({}, e, { pub: !e.pub }); }) }), () => this.toast(nowPub ? 'Now on your wall.' : 'Back to private. Just for you.'));
+    }
+    if (kind === 'del') this.setState(s => ({ entries: s.entries.filter(e => e.id !== id) }), () => this.toast('Deleted. The map forgets too.'));
+  };
+
+  renderVals() {
+    const s = this.state;
+    const stamp = this.props.stampColor || '#cf3a2c';
+    const steel = '#5980a6';
+    const dim = 'rgba(29,31,32,.45)';
+    const been = this.beenCountries();
+    const nats = this.natCountries();
+    const rel = this.relCountries();
+    const a = s.add;
+
+    const feed = s.feed.map(p => {
+      if (p.isRel) return {
+        isRel: true, isSolo: false, initials: p.initials, when: p.when,
+        edge: '3px solid ' + steel,
+        relLead: p.who.split(' ')[0] + ' added ' + p.country + ' on ',
+        relMapName: p.mapName,
+        onProfile: () => this.openPerson(p.who, 'feed'), onOpen: () => {}, onMenu: () => {},
+        photo: false, note: '', route: '', emoji: '', kudosCount: 0, commentCount: 0,
+        kudosColor: dim, kudosFill: 'transparent', who: p.who
+      };
+      return {
+        isRel: false, isSolo: true, initials: p.initials, who: p.who, when: p.when,
+        edge: '1px solid rgba(29,31,32,.18)',
+        route: p.nationality + ' \u00B7 ' + p.country,
+        note: p.note, emoji: p.emoji, photo: p.photo,
+        kudosCount: p.kudos.length, commentCount: p.comments.length,
+        kudosColor: p.iK ? stamp : 'rgba(29,31,32,.55)',
+        kudosFill: p.iK ? stamp : 'transparent',
+        onKudos: () => this.toggleFeedKudos(p.id),
+        onOpen: () => this.openDetail('feed', p.id),
+        onMenu: () => this.openFeedMenu(p),
+        onProfile: () => this.openPerson(p.who, 'feed'),
+        relLead: '', relMapName: ''
+      };
+    });
+
+    const history = s.entries.map(e => ({
+      country: e.country,
+      sub: e.nationality + ' \u00B7 ' + (e.pub ? 'On your wall' : 'Private'),
+      emoji: e.emoji, note: e.note, private: !e.pub,
+      meta: e.when + '  \u00B7  ' + e.name + '  \u00B7  ' + e.kudos.length + ' kudos',
+      onMenu: () => this.openMineMenu(e),
+      onOpen: () => this.openDetail('mine', e.id)
+    }));
+
+    // detail
+    let detail = { comments: [], kudosPeople: [] };
+    if (s.overlay === 'detail') {
+      if (s.detailKind === 'feed') {
+        const p = s.feed.find(x => x.id === s.detailId) || {};
+        detail = {
+          headerLabel: 'Post', initials: p.initials, who: p.who,
+          route: (p.nationality || '') + ' \u00B7 ' + (p.country || ''),
+          emoji: p.emoji, note: p.note, photo: p.photo, when: p.when,
+          showPartner: false, partner: '',
+          kudosPeople: p.kudos || [], kudosLabel: (p.kudos || []).length + ' kudos',
+          kudosColor: p.iK ? stamp : 'rgba(29,31,32,.55)', kudosFill: p.iK ? stamp : 'transparent',
+          onKudos: () => this.toggleFeedKudos(p.id),
+          comments: p.comments || [],
+          commentHeader: ((p.comments || []).length) + ' comments',
+          visibilityNote: 'Kudos and comments here are visible to ' + (p.who || '').split(' ')[0] + '\u2019s friends only.'
+        };
+      } else {
+        const e = s.entries.find(x => x.id === s.detailId) || {};
+        detail = {
+          headerLabel: e.pub ? 'Your post' : 'Private entry', initials: 'CD', who: 'Colombe Duval',
+          route: (e.nationality || '') + ' \u00B7 ' + (e.country || ''),
+          emoji: e.emoji, note: e.note, photo: e.photo, when: e.when,
+          showPartner: true, partner: e.name,
+          kudosPeople: e.kudos || [], kudosLabel: (e.kudos || []).length + ' kudos',
+          kudosColor: e.iK ? stamp : 'rgba(29,31,32,.55)', kudosFill: e.iK ? stamp : 'transparent',
+          onKudos: () => this.toggleMyKudos(e.id),
+          comments: e.comments || [],
+          commentHeader: ((e.comments || []).length) + ' comments',
+          visibilityNote: e.pub ? 'Your friends can see this post, its kudos and its comments. The name above stays with you.' : 'Private. Not on anyone\u2019s feed.'
+        };
+      }
+    }
+
+    // friends list (own or a friend's)
+    const q = s.friendQuery.toLowerCase();
+    const source = s.friendsOf
+      ? s.friends.filter(f => f.name !== 'Colombe Duval')
+      : s.friends.filter(f => f.friend);
+    const friendList = source.filter(f => f.name.toLowerCase().includes(q)).map(f => ({
+      name: f.name, initials: f.initials, status: f.status,
+      onOpen: () => this.openPerson(f.name, 'friends')
+    }));
+
+    const person = s.person ? {
+      name: s.person.name, initials: s.person.initials,
+      status: s.person.friend ? s.person.status : 'Not a friend yet',
+      isFriend: !!s.person.friend, isStranger: !s.person.friend,
+      cta: 'Add friend', friendCount: s.person.friends,
+      onFriends: () => this.setState({ friendsOf: s.person.name, overlay: 'friends', friendQuery: '' }),
+      posts: s.feed.filter(p => p.who === s.person.name && !p.isRel).map(p => ({
+        route: p.nationality + ' \u00B7 ' + p.country, emoji: p.emoji, note: p.note, when: p.when,
+        onOpen: () => this.openDetail('feed', p.id)
+      }))
+    } : { posts: [] };
+
+    // add-flow derived
+    const emojiOptions = Component.EMOJI.map(ch => ({
+      char: ch, onPick: () => this.patchAdd({ emoji: ch }),
+      bg: a && a.emoji === ch ? 'rgba(89,128,166,.16)' : 'transparent',
+      border: a && a.emoji === ch ? steel : 'rgba(29,31,32,.18)'
+    }));
+
+    const pickerList = s.picker === 'nat'
+      ? Component.PAIRS.map(p => ({ label: p[1], value: p[1] }))
+      : Component.PAIRS.map(p => ({ label: p[0], value: p[0] }));
+    const pq = s.pickerQuery.toLowerCase();
+    const chosen = a ? (s.picker === 'nat' ? a.nationality : a.country) : '';
+    const pickerOptions = pickerList.filter(o => o.label.toLowerCase().includes(pq)).map(o => ({
+      label: o.label,
+      tick: o.value === chosen ? 'Chosen' : '',
+      tickColor: steel,
+      onPick: () => { this.patchAdd(s.picker === 'nat' ? { nationality: o.value } : { country: o.value }); this.closePicker(); }
+    }));
+
+    const step1ok = a ? (a.rel ? !!a.country : (!!a.country && !!a.nationality)) : false;
+    const blocked = a ? (a.step === 1 ? !step1ok : (a.step === 2 ? !a.emoji : false)) : false;
+
+    const draftSummary = a
+      ? (a.rel
+        ? a.country + ' on ' + s.relName + (a.pub ? ', announced to your friends.' : ', kept between you two.')
+        : a.nationality + ' in ' + a.country + (a.name ? ', with ' + a.name + ' (private)' : '') + '. ' + (a.pub ? 'Going to your wall.' : 'Staying private.'))
+      : '';
+
+    const inviteCandidates = s.friends.filter(f => f.friend && f.name !== 'Alex Moreau').map(f => ({
+      name: f.name, initials: f.initials,
+      action: s.invitePending === f.name ? 'Pending' : 'Invite',
+      onInvite: () => { this.setState({ invitePending: f.name }); this.toast('Invite sent to ' + f.name.split(' ')[0] + '. Their call.'); }
+    }));
+
+    return {
+      isMap: s.tab === 'map', isFeed: s.tab === 'feed', isHistory: s.tab === 'history', isProfile: s.tab === 'profile',
+      cMap: s.tab === 'map' ? steel : 'rgba(29,31,32,.45)',
+      cFeed: s.tab === 'feed' ? steel : 'rgba(29,31,32,.45)',
+      cHistory: s.tab === 'history' ? steel : 'rgba(29,31,32,.45)',
+      cProfile: s.tab === 'profile' ? steel : 'rgba(29,31,32,.45)',
+      tabMap: () => this.setState({ tab: 'map' }), tabFeed: () => this.setState({ tab: 'feed' }),
+      tabHistory: () => this.setState({ tab: 'history' }), tabProfile: () => this.setState({ tab: 'profile' }),
+
+      stampColor: stamp,
+      trackTransform: 'translateX(calc(' + (s.side * -50) + '% + ' + s.dragX + 'px))',
+      beenLogged: been.join(','), natLogged: nats.join(','), relLogged: rel.join(','),
+      dotA: s.side === 0 ? '#1d1f20' : 'transparent',
+      dotB: s.side === 1 ? '#1d1f20' : 'transparent',
+      goSideA: () => this.setState({ side: 0 }), goSideB: () => this.setState({ side: 1 }),
+      onDown: this.onDown, onMove: this.onMove, onUp: this.onUp,
+      statCount: s.side === 0 ? been.length : nats.length,
+      statCountLabel: s.side === 0 ? 'Countries' : 'Nationalities',
+      statPct: s.side === 0 ? this.pct(been.length) : this.pct(nats.length),
+      statNote: s.side === 0
+        ? been.length + ' of 195 recognised countries. Red is logged, white is unfinished business.'
+        : nats.length + ' of 195. Same denominator, different kind of collection.',
+
+      beenCount: been.length, natCount: nats.length, beenPct: this.pct(been.length),
+      friendCount: s.friends.filter(f => f.friend).length,
+      relName: s.relName,
+      relSummary: rel.length + ' countries together \u00B7 ' + this.pct(rel.length) + '% of the world',
+      relCount: rel.length, relPct: this.pct(rel.length),
+      relList: s.relEntries.map(r => ({ country: r.country, emoji: r.emoji, meta: 'by ' + r.by + ' \u00B7 ' + r.when })),
+      relStatsNote: this.props.relCountsToPersonal
+        ? 'Open question: shared stamps currently DO count toward each partner\u2019s personal Been map.'
+        : 'Open question: shared stamps are kept separate from each partner\u2019s personal Been stats. Flip the tweak to test the other rule.',
+      openRel: () => this.setState({ overlay: 'rel' }),
+      openRelInvite: () => this.setState({ overlay: 'relInvite' }),
+      openAddRel: () => this.openAdd(true),
+      showRel: s.overlay === 'rel', showRelInvite: s.overlay === 'relInvite',
+      invitePending: !!s.invitePending, inviteName: (s.invitePending || '').split(' ')[0],
+      inviteCandidates,
+      renaming: s.renaming, relDraft: s.relDraft,
+      startRename: () => this.setState({ renaming: true, relDraft: s.relName }),
+      onRelDraft: e => this.setState({ relDraft: e.target.value }),
+      saveRename: () => this.setState({ relName: s.relDraft.trim() || s.relName, renaming: false }),
+
+      feed, history,
+      historyCountLabel: s.entries.length + ' entries \u00B7 ' + s.entries.filter(e => !e.pub).length + ' private',
+
+      showDetail: s.overlay === 'detail', detail,
+      commentDraft: s.commentDraft,
+      onCommentInput: e => this.setState({ commentDraft: e.target.value }),
+      submitComment: this.submitComment,
+
+      showFriends: s.overlay === 'friends', friendList, friendQuery: s.friendQuery,
+      friendsTitle: s.friendsOf ? s.friendsOf.split(' ')[0] + '\u2019s friends' : 'Your friends',
+      onFriendQuery: e => this.setState({ friendQuery: e.target.value }),
+      openFriends: () => this.setState({ overlay: 'friends', friendsOf: null, friendQuery: '' }),
+
+      showPerson: s.overlay === 'person', person, addFriend: this.addFriend,
+      backFromPerson: () => this.setState({ overlay: s.personBack === 'friends' ? 'friends' : null }),
+
+      closeOverlay: this.closeOverlay,
+      showSheet: !!s.sheet,
+      sheet: s.sheet ? { title: s.sheet.title, actions: s.sheet.actions.map(x => ({ label: x.label, color: x.color || '#1d1f20', onPick: () => this.pickSheet(x.kind) })) } : { actions: [] },
+      closeSheet: () => this.setState({ sheet: null }),
+      toast: s.toast,
+
+      openAdd: () => this.openAdd(false),
+      showAdd: !!a,
+      addTitle: a && a.rel ? 'Add to ' + s.relName : 'New entry',
+      addStepLabel: a ? '0' + a.step + ' / 03' : '',
+      addProgress: a ? Math.round(a.step / 3 * 100) + '%' : '0%',
+      atStep1: !!a && a.step === 1, atStep2: !!a && a.step === 2, atStep3: !!a && a.step === 3,
+      wantsNationality: !!a && !a.rel,
+      step1Sub: a && a.rel ? 'Shared maps track countries only \u2014 the two of you, and where you got to.' : 'Where it happened, and where they\u2019re from. They don\u2019t have to match.',
+      natValue: a && a.nationality ? a.nationality : 'Pick a nationality',
+      natColor: a && a.nationality ? '#1d1f20' : 'rgba(29,31,32,.45)',
+      countryValue: a && a.country ? a.country : 'Pick a country',
+      countryColor: a && a.country ? '#1d1f20' : 'rgba(29,31,32,.45)',
+      openNatPicker: () => this.openPicker('nat'), openCountryPicker: () => this.openPicker('country'),
+      draftName: a ? a.name : '', draftNote: a ? a.note : '',
+      onDraftName: e => this.patchAdd({ name: e.target.value }),
+      onDraftNote: e => this.patchAdd({ note: e.target.value }),
+      emojiOptions,
+      togglePhoto: () => this.patchAdd({ photo: !(a && a.photo) }),
+      photoBg: a && a.photo ? 'repeating-linear-gradient(135deg,rgba(89,128,166,.16) 0 6px,transparent 6px 12px)' : 'none',
+      photoLabel: a && a.photo ? 'photo attached \u00B7 tap to remove' : 'tap to add a photo',
+      toggleShare: () => this.patchAdd({ pub: !(a && a.pub) }),
+      shareBorder: a && a.pub ? steel : 'rgba(29,31,32,.25)',
+      shareTrack: a && a.pub ? 'rgba(89,128,166,.2)' : 'transparent',
+      shareKnob: a && a.pub ? '23px' : '2px',
+      shareKnobBg: a && a.pub ? steel : 'rgba(29,31,32,.35)',
+      shareHint: a && a.pub ? 'Friends will see it. Never the name.' : 'Private \u2014 map and history only.',
+      draftSummary,
+      addBack: this.addBack, addNext: this.addNext,
+      canGoBack: !!a && a.step > 1,
+      addBlocked: blocked,
+      nextBg: blocked ? 'rgba(29,31,32,.35)' : steel,
+      nextOpacity: blocked ? '0.55' : '1',
+      addNextLabel: a && a.step === 3 ? 'Publish' : 'Continue',
+      pickerOpen: !!s.picker, pickerOptions, pickerQuery: s.pickerQuery,
+      pickerTitle: s.picker === 'nat' ? 'Nationality' : 'Country',
+      onPickerQuery: e => this.setState({ pickerQuery: e.target.value }),
+      closePicker: this.closePicker
+    };
+  }
+}
+</script>
+</body>
+</html>

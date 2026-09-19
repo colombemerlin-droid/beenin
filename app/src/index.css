@@ -1,0 +1,58 @@
+:root {
+  --coral: #E2725B;
+  --coral-dark: #C25A45;
+  --coral-tint: #FCEAE3;
+  --coral-tint-2: #F8CFC1;
+  --ink: #1F1A17;
+  --ink-40: #A39A92;
+  --ink-body: #5C544E;
+  --stone: #E8E1D7;
+  --stone-dashed: #D6CFC6;
+  --cream: #F1EAE0;
+  --cream-lighter: #FAF6F0;
+  --paper: #FFFDF9;
+  --error: #B23B2A;
+
+  color-scheme: light;
+}
+
+* , *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font: 400 15px/1.5 Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root { min-height: 100vh; }
+
+a { color: var(--coral-dark); text-underline-offset: 3px; }
+a:hover { color: var(--coral); }
+
+::selection { background: var(--coral-tint-2); color: var(--ink); }
+
+input, textarea, button { font-family: Inter, system-ui, sans-serif; }
+input:focus-visible, textarea:focus-visible, button:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+button { -webkit-tap-highlight-color: transparent; }
+
+.serif {
+  font-family: Fraunces, Georgia, serif;
+  font-weight: 400;
+  font-variation-settings: 'opsz' 144, 'SOFT' 60, 'WONK' 1;
+}
+
+.label {
+  font: 500 11px/1.3 Inter, sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-40);
+}
+
+.noscroll::-webkit-scrollbar { width: 0; height: 0; }

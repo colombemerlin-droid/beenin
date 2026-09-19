@@ -1,0 +1,2059 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..700,0..100,0..1&amp;family=Inter:wght@400;500;600;700&amp;display=swap">
+<script src="https://unpkg.com/d3@7.9.0/dist/d3.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js" integrity="sha384-Ukv1p/xTma6P4/2bY5KzWBw+ydSpXmhCMtyciIQVDJ1RmOxtCYNMF1uXT9T63H67" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; background: #F1EAE0; color: #1F1A17; font: 400 15px/1.5 Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: #C25A45; text-underline-offset: 3px; }
+  a:hover { color: #E2725B; }
+  ::selection { background: #F8CFC1; color: #1F1A17; }
+  input, textarea, button { font-family: Inter, system-ui, sans-serif; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid #E2725B; outline-offset: 2px; }
+  .noscroll::-webkit-scrollbar { width: 0; height: 0; }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#F1EAE0;display:flex;flex-direction:column;align-items:center;gap:24px;padding:36px 16px 56px">
+
+  <div style="display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center">
+    <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92">Been In · mobile prototype</div>
+    <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:30px;line-height:1.1;font-variation-settings:'opsz' 144,'SOFT' 80,'WONK' 1">Ditch the red flags. Collect the world's.</div>
+  </div>
+
+  <div style="width:390px;height:844px;flex:none;position:relative;background:#FAF6F0;border-radius:44px;box-shadow:0 2px 6px rgba(31,26,23,.08),0 18px 40px rgba(31,26,23,.1);display:flex;flex-direction:column;overflow:hidden">
+
+    <div style="height:47px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 6px;font:600 13px/1 Inter,sans-serif;color:#1F1A17;position:relative;z-index:3">
+      <span>9:41</span>
+      <span style="position:absolute;left:50%;transform:translateX(-50%);top:11px;width:88px;height:26px;border-radius:999px;background:#1F1A17"></span>
+      <span style="display:flex;gap:6px;align-items:center;color:#1F1A17">
+        <svg width="16" height="10" viewBox="0 0 16 10"><path d="M1 9 L1 7 M5 9 L5 5 M9 9 L9 3 M13 9 L13 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
+        <svg width="22" height="10" viewBox="0 0 22 10"><rect x="0.5" y="1.5" width="18" height="7" rx="2" fill="none" stroke="currentColor" stroke-opacity=".5"></rect><rect x="2" y="3" width="14" height="4" rx="1" fill="currentColor"></rect><rect x="20" y="4" width="1.5" height="2" fill="currentColor" opacity=".5"></rect></svg>
+      </span>
+    </div>
+
+    <div style="flex:1;position:relative;overflow:hidden">
+
+      <!-- ══════ MAP ══════ -->
+      <sc-if value="{{ isMap }}" hint-placeholder-val="{{ true }}">
+      <div class="noscroll" style="position: absolute; inset: 0; overflow-y: auto; padding: 4px 20px 120px; left: -2px; top: -1px">
+        <div style="padding:8px 0 14px">
+          <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:28px;line-height:1.15;letter-spacing:-.01em">Your Passport</div>
+          <div style="font:400 13px/1.45 Inter,sans-serif;color:#5C544E;margin-top:2px">private to you. always.</div>
+        </div>
+
+        <div class="noscroll" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:14px">
+          <sc-for list="{{ myMaps }}" as="m" hint-placeholder-count="1">
+            <button onClick="{{ m.onOpen }}" style="flex:none;display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;border:1px solid #E8E1D7;background:#F1EAE0;cursor:pointer;color:#1F1A17;font:500 13px/1.3 Inter,sans-serif" style-hover="background:#FCEAE3;border-color:#F8CFC1">
+              <span style="width:7px;height:7px;border-radius:50%;background:#E2725B"></span>
+              <span>{{ m.name }}</span>
+              <span style="color:#A39A92;font:400 12px/1.4 Inter,sans-serif">{{ m.count }}</span>
+            </button>
+          </sc-for>
+          <button onClick="{{ openNewMap }}" style="flex:none;padding:8px 14px;border-radius:999px;border:1px dashed #D6CFC6;background:transparent;cursor:pointer;color:#5C544E;font:500 13px/1.3 Inter,sans-serif" style-hover="color:#C25A45;border-color:#F8CFC1">+ New map</button>
+        </div>
+
+        <div style="position:relative;border-radius:22px;background:#FFFDF9;border:1px solid #E8E1D7;overflow:hidden;height:322px;touch-action:pan-y;box-shadow:0 1px 2px rgba(31,26,23,.04),0 4px 14px rgba(31,26,23,.06)" onPointerDown="{{ onDown }}" onPointerMove="{{ onMove }}" onPointerUp="{{ onUp }}" onPointerCancel="{{ onUp }}">
+          <div style="display:flex;width:200%;height:100%;transition:transform 280ms cubic-bezier(0.22,1,0.36,1);transform:{{ trackTransform }}">
+            <div style="width:50%;height:100%;display:flex;flex-direction:column;padding:16px 14px 14px">
+              <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;flex:none">Been · stamps</div>
+              <div style="flex:1;min-height:0;margin-top:8px">
+                <x-import component-from-global-scope="world-map" from="./world-map.js" logged="{{ beenLogged }}" hint-size="100%,100%"></x-import>
+              </div>
+            </div>
+            <div style="width:50%;height:100%;display:flex;flex-direction:column;padding:16px 14px 14px">
+              <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;flex:none">Been In · passports</div>
+              <div style="flex:1;min-height:0;margin-top:8px">
+                <x-import component-from-global-scope="world-map" from="./world-map.js" logged="{{ natLogged }}" hint-size="100%,100%"></x-import>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:14px 0 16px">
+          <button onClick="{{ goSideA }}" style="width:26px;height:6px;border-radius:999px;border:0;padding:0;cursor:pointer;background:{{ dotA }};transition:background 180ms"></button>
+          <button onClick="{{ goSideB }}" style="width:26px;height:6px;border-radius:999px;border:0;padding:0;cursor:pointer;background:{{ dotB }};transition:background 180ms"></button>
+          <span style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92;margin-left:4px">swipe to flip</span>
+        </div>
+
+        <div style="display:flex;gap:12px">
+          <div style="flex:1;background:#F1EAE0;border-radius:14px;padding:14px 16px 16px;box-shadow:0 1px 2px rgba(31,26,23,.04),0 4px 14px rgba(31,26,23,.06)">
+            <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:46px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;font-variation-settings:'opsz' 144,'SOFT' 50">{{ statCount }}</div>
+            <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin-top:6px">{{ statCountLabel }}</div>
+          </div>
+          <div style="flex:1;background:#F1EAE0;border-radius:14px;padding:14px 16px 16px;box-shadow:0 1px 2px rgba(31,26,23,.04),0 4px 14px rgba(31,26,23,.06)">
+            <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:46px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:#E2725B;font-variation-settings:'opsz' 144,'SOFT' 50">{{ statPct }}</div>
+            <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin-top:6px">Of the world</div>
+          </div>
+        </div>
+
+        <div style="margin-top:24px;background:#F1EAE0;border-radius:14px;padding:14px 16px 8px;box-shadow:0 1px 2px rgba(31,26,23,.04),0 4px 14px rgba(31,26,23,.06)">
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px">
+            <span style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92">By continent</span>
+            <span style="flex:1"></span>
+            <span style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92">{{ continentSub }}</span>
+          </div>
+          <sc-for list="{{ continents }}" as="c" hint-placeholder-count="6">
+            <div style="display:flex;align-items:center;gap:10px;padding:7px 0">
+              <span style="width:100px;flex:none;font:400 14px/1.4 Inter,sans-serif;color:#1F1A17">{{ c.name }}</span>
+              <span style="flex:1;height:6px;border-radius:999px;background:#E8E1D7;overflow:hidden;display:block">
+                <span style="display:block;height:100%;border-radius:999px;background:#E2725B;transition:width 480ms cubic-bezier(0.22,1,0.36,1);width:{{ c.bar }}"></span>
+              </span>
+              <span style="width:44px;flex:none;text-align:right;font:500 13px/1.3 Inter,sans-serif;font-variant-numeric:tabular-nums;color:{{ c.color }}">{{ c.pct }}</span>
+              <span style="width:42px;flex:none;text-align:right;font:400 12px/1.4 Inter,sans-serif;color:#A39A92;font-variant-numeric:tabular-nums">{{ c.frac }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="margin-top:16px;background:#F1EAE0;border-radius:14px;padding:14px 16px 6px;box-shadow:0 1px 2px rgba(31,26,23,.04),0 4px 14px rgba(31,26,23,.06)">
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px">
+            <span style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92">{{ azLabel }}</span>
+            <span style="flex:1"></span>
+            <span style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92">A–Z</span>
+          </div>
+          <sc-for list="{{ azList }}" as="c" hint-placeholder-count="6">
+            <div style="border-top:1px solid #E8E1D7">
+              <button onClick="{{ c.onToggle }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 0;background:transparent;border:0;cursor:pointer;text-align:left;color:#1F1A17">
+                <span style="font-size:17px;line-height:1;flex:none">{{ c.flag }}</span>
+                <span style="flex:1;font:400 14px/1.4 Inter,sans-serif">{{ c.name }}</span>
+                <span style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92">{{ c.sub }}</span>
+                <span style="color:#A39A92;display:flex;transform:{{ c.caret }};transition:transform 180ms"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg></span>
+              </button>
+              <sc-if value="{{ c.open }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-wrap:wrap;gap:7px;padding:0 0 12px 27px">
+                  <sc-for list="{{ c.nats }}" as="n" hint-placeholder-count="2">
+                    <span style="display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;background:#FCEAE3;color:#C25A45;font:500 13px/1.3 Inter,sans-serif">
+                      <span style="font-size:13px;line-height:1">{{ n.flag }}</span>
+                      <span>{{ n.label }}</span>
+                    </span>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ cityLocked }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:16px;background:#F1EAE0;border-radius:14px;padding:16px;opacity:.55;user-select:none;box-shadow:0 1px 2px rgba(31,26,23,.04)">
+            <div style="display:flex;align-items:center;gap:9px">
+              <span style="color:#A39A92;display:flex"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
+              <span style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92">By city</span>
+            </div>
+            <div style="font:400 13px/1.45 Inter,sans-serif;color:#5C544E;margin-top:10px">Only available with Pro version.</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ cityUnlocked }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;background:#F1EAE0;border-radius:14px;padding:14px 16px 6px;box-shadow:0 1px 2px rgba(31,26,23,.04),0 4px 14px rgba(31,26,23,.06)">
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px">
+              <span style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92">By city</span>
+              <span style="flex:1"></span>
+              <span style="font:500 12px/1.4 Inter,sans-serif;color:#C25A45">Pro</span>
+            </div>
+            <sc-for list="{{ cityCountries }}" as="c" hint-placeholder-count="4">
+              <div style="border-top:1px solid #E8E1D7">
+                <button onClick="{{ c.onToggle }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:11px 0;background:transparent;border:0;cursor:pointer;text-align:left;color:#1F1A17">
+                  <span style="font-size:17px;line-height:1;flex:none">{{ c.flag }}</span>
+                  <span style="flex:1;font:400 14px/1.4 Inter,sans-serif">{{ c.name }}</span>
+                  <span style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92">{{ c.count }}</span>
+                  <span style="color:#A39A92;display:flex;transform:{{ c.caret }};transition:transform 180ms"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg></span>
+                </button>
+                <sc-if value="{{ c.open }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-wrap:wrap;gap:7px;padding:0 0 12px">
+                    <sc-for list="{{ c.cities }}" as="ct" hint-placeholder-count="2">
+                      <span style="padding:7px 12px;border-radius:999px;background:#FCEAE3;color:#C25A45;font:500 13px/1.3 Inter,sans-serif">{{ ct }}</span>
+                    </sc-for>
+                    <button onClick="{{ c.onAdd }}" style="padding:7px 12px;border-radius:999px;border:1px dashed #D6CFC6;background:transparent;cursor:pointer;color:#5C544E;font:500 13px/1.3 Inter,sans-serif" style-hover="color:#C25A45;border-color:#F8CFC1">+ Add city</button>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        
+      </div>
+      </sc-if>
+
+      <!-- ══════ OVERLAY: PASSPORT LIST ══════ -->
+      <sc-if value="{{ showPassport }}" hint-placeholder-val="{{ false }}">
+      <div class="noscroll" style="position:absolute;inset:0;background:#FAF6F0;z-index:10;overflow-y:auto">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid #E8E1D7;position:sticky;top:0;background:#FAF6F0;z-index:2">
+          <button onClick="{{ passportBack }}" style="background:transparent;border:0;cursor:pointer;padding:0;display:flex;color:#1F1A17"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"></path></svg></button>
+          <span style="flex:1;font:600 17px/1.3 Inter,sans-serif">{{ passportTitle }}</span>
+        </div>
+        <div style="padding:14px 12px 120px">
+          <sc-for list="{{ passportRows }}" as="r" hint-placeholder-count="5">
+            <button onClick="{{ r.onOpen }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:13px 10px;border-radius:14px;background:transparent;border:0;cursor:pointer;text-align:left;color:#1F1A17" style-hover="background:#FCEAE3">
+              <span style="font-size:19px;line-height:1;flex:none">{{ r.flag }}</span>
+              <span style="flex:1;min-width:0">
+                <span style="display:block;font:400 15px/1.4 Inter,sans-serif">{{ r.label }}</span>
+                <span style="display:block;font:400 12px/1.4 Inter,sans-serif;color:#A39A92;margin-top:2px">{{ r.sub }}</span>
+              </span>
+              <span style="color:#A39A92;display:flex;opacity:{{ r.chevron }}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg></span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══════ FEED ══════ -->
+      <sc-if value="{{ isFeed }}" hint-placeholder-val="{{ false }}">
+      <div class="noscroll" style="position:absolute;inset:0;overflow-y:auto;padding:4px 20px 120px">
+        <div style="padding:8px 0 16px">
+          <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:28px;line-height:1.15;letter-spacing:-.01em">Feed</div>
+          <div style="font:400 13px/1.45 Inter,sans-serif;color:#5C544E;margin-top:2px">visible to your friends. nobody else.</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <sc-for list="{{ feed }}" as="p" hint-placeholder-count="3">
+            <div style="background:#F1EAE0;border-radius:14px;padding:12px 16px 16px;box-shadow:0 1px 2px rgba(31,26,23,.04),0 4px 14px rgba(31,26,23,.06);border-left:{{ p.edge }}">
+              <sc-if value="{{ p.isRel }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="width:34px;height:34px;flex:none;border-radius:50%;background:{{ p.color }};color:#FFF8F2;display:flex;align-items:center;justify-content:center;font:600 14px/1 Inter,sans-serif">{{ p.initials }}</span>
+                  <span style="flex:1;font:400 14px/1.5 Inter,sans-serif;color:#1F1A17">{{ p.relLead }}<b style="font-weight:600">{{ p.relMapName }}</b></span>
+                  <span style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92;flex:none">{{ p.when }}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:7px;margin-top:10px;padding-top:11px;border-top:1px solid #E8E1D7">
+                  <span style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#C25A45">Own map</span>
+                  <span style="font-size:15px;line-height:1">{{ p.flag }}</span>
+                  <span style="font:400 13px/1.45 Inter,sans-serif;color:#5C544E">{{ p.country }}</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ p.isSolo }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:center;gap:11px">
+                  <button onClick="{{ p.onProfile }}" style="width:38px;height:38px;flex:none;border-radius:50%;border:0;background:{{ p.color }};color:#fff;cursor:pointer;font:600 16px/1 Inter,sans-serif">{{ p.initials }}</button>
+                  <div style="flex:1;min-width:0">
+                    <div style="font:400 14px/1.4 Inter,sans-serif">
+                      <button onClick="{{ p.onProfile }}" style="background:transparent;border:0;padding:0;cursor:pointer;font:600 14px/1.4 Inter,sans-serif;color:#1F1A17">{{ p.who }}</button>
+                      <span style="color:#A39A92"> · {{ p.when }}</span>
+                    </div>
+                    <div style="font:400 13px/1.45 Inter,sans-serif;color:#5C544E;margin-top:1px">{{ p.headline }}</div>
+                  </div>
+                  <button onClick="{{ p.onMenu }}" style="width:30px;height:30px;flex:none;background:transparent;border:0;cursor:pointer;color:#A39A92;padding:0;display:flex;align-items:center;justify-content:center">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>
+                  </button>
+                </div>
+
+                <button onClick="{{ p.onOpen }}" style="display:block;width:100%;text-align:left;background:transparent;border:0;padding:0;margin-top:12px;cursor:pointer;color:#1F1A17">
+                  <span style="display:flex;align-items:center;gap:8px">
+                    <span style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92">Passport</span>
+                    <span style="font:500 14px/1.3 Inter,sans-serif;color:#1F1A17">{{ p.passport }}</span>
+                    <span style="flex:1"></span>
+                    <span style="font-size:18px;line-height:1">{{ p.emoji }}</span>
+                  </span>
+                  <sc-if value="{{ p.place }}" hint-placeholder-val="{{ false }}">
+                    <span style="display:flex;align-items:center;gap:7px;margin-top:9px;color:#5C544E">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.4 7-11a7 7 0 1 0-14 0c0 4.6 7 11 7 11Z"></path><circle cx="12" cy="10" r="2.4"></circle></svg>
+                      <span style="font:400 13px/1.45 Inter,sans-serif">{{ p.place }}</span>
+                    </span>
+                  </sc-if>
+                  <sc-if value="{{ p.note }}" hint-placeholder-val="{{ true }}">
+                    <span style="display:block;font-family:Fraunces,Georgia,serif;font-weight:400;font-size:17px;line-height:1.4;margin-top:10px;text-wrap:pretty">“{{ p.note }}”</span>
+                  </sc-if>
+                  <sc-if value="{{ p.photo }}" hint-placeholder-val="{{ false }}">
+                    <span style="display:flex;align-items:flex-end;margin-top:12px;height:140px;border-radius:8px;border:1px solid #E8E1D7;background-image:repeating-linear-gradient(135deg,rgba(226,114,91,.1) 0 7px,transparent 7px 14px);padding:8px">
+                      <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#5C544E;background:#FAF6F0;border-radius:4px;padding:3px 6px">photo</span>
+                    </span>
+                  </sc-if>
+                  <span style="display:block;font:400 12px/1.4 Inter,sans-serif;color:#A39A92;margin-top:10px">{{ p.dateLabel }}</span>
+                </button>
+
+                <div style="display:flex;align-items:center;gap:14px;margin-top:14px;padding-top:12px;border-top:1px solid #E8E1D7">
+                  <button onClick="{{ p.onKudos }}" style="width:34px;height:34px;flex:none;border-radius:50%;border:1px solid {{ p.kudosBorder }};background:{{ p.kudosBg }};color:{{ p.kudosColor }};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 180ms">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 22V11l4.5-8a2.5 2.5 0 0 1 2.3 3.4L12.8 9H18a2.5 2.5 0 0 1 2.4 3.1l-1.6 7A2.5 2.5 0 0 1 16.4 22H7Z"></path><path d="M7 11H4.5A1.5 1.5 0 0 0 3 12.5v8A1.5 1.5 0 0 0 4.5 22H7"></path></svg>
+                  </button>
+                  <div style="display:flex;align-items:center">
+                    <sc-for list="{{ p.kudosPeople }}" as="k" hint-placeholder-count="3">
+                      <span style="width:24px;height:24px;border-radius:50%;background:{{ k.color }};color:#fff;display:flex;align-items:center;justify-content:center;font:600 10px/1 Inter,sans-serif;margin-right:-7px;border:1.5px solid #F1EAE0">{{ k.initials }}</span>
+                    </sc-for>
+                  </div>
+                  <span style="font:400 13px/1.45 Inter,sans-serif;color:#5C544E;margin-left:10px">{{ p.kudosLabel }}</span>
+                  <span style="flex:1"></span>
+                  <button onClick="{{ p.onOpen }}" style="display:flex;align-items:center;gap:6px;background:transparent;border:0;padding:0;cursor:pointer;color:#5C544E;font:400 13px/1.45 Inter,sans-serif">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 21l1.8-5.5A8 8 0 1 1 21 12Z"></path></svg>
+                    <span>{{ p.commentCount }}</span>
+                  </button>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══════ POSITIONS ══════ -->
+      <sc-if value="{{ isPositions }}" hint-placeholder-val="{{ false }}">
+      <div class="noscroll" style="position:absolute;inset:0;overflow-y:auto;padding:4px 20px 120px">
+        <div style="padding:8px 0 14px">
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <span style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:28px;line-height:1.15">Positions</span>
+            <span style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#C25A45">Pro</span>
+          </div>
+          <div style="font:400 13px/1.45 Inter,sans-serif;color:#5C544E;margin-top:2px">{{ posSub }}</div>
+        </div>
+
+        <sc-if value="{{ pairIncoming }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#FCEAE3;border-radius:14px;padding:14px 16px">
+            <div style="font:400 14px/1.5 Inter,sans-serif"><b style="font-weight:600">{{ pairIncomingName }}</b> wants to pair with you.</div>
+            <div style="font:400 12px/1.45 Inter,sans-serif;color:#5C544E;margin-top:4px">One partner at a time. Accepting ends any current pairing.</div>
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <button onClick="{{ acceptPair }}" style="flex:1;padding:11px;border-radius:8px;border:0;background:#E2725B;color:#FFF8F2;font:600 14px/1 Inter,sans-serif;cursor:pointer" style-hover="background:#C25A45">Accept</button>
+              <button onClick="{{ declinePair }}" style="flex:1;padding:11px;border-radius:8px;border:0;background:#F1EAE0;color:#1F1A17;font:600 14px/1 Inter,sans-serif;cursor:pointer" style-hover="background:#E8E1D7">Decline</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;align-items:center;gap:11px;margin-top:14px;background:#F1EAE0;border-radius:14px;padding:13px 16px;box-shadow:0 1px 2px rgba(31,26,23,.04),0 4px 14px rgba(31,26,23,.06)">
+          <span style="width:34px;height:34px;flex:none;border-radius:50%;background:{{ pairColor }};color:#fff;display:flex;align-items:center;justify-content:center;font:600 13px/1 Inter,sans-serif">{{ pairInitials }}</span>
+          <span style="flex:1;min-width:0">
+            <span style="display:block;font:600 15px/1.3 Inter,sans-serif">{{ pairTitle }}</span>
+            <span style="display:block;font:400 12px/1.45 Inter,sans-serif;color:#5C544E;margin-top:2px">{{ pairHint }}</span>
+          </span>
+          <button onClick="{{ pairAction }}" style="flex:none;padding:9px 13px;border-radius:8px;border:0;background:{{ pairBtnBg }};color:{{ pairBtnColor }};font:600 13px/1 Inter,sans-serif;cursor:pointer">{{ pairBtnLabel }}</button>
+        </div>
+
+        <sc-if value="{{ hasPings }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:14px;background:#F1EAE0;border-radius:14px;padding:12px 16px;box-shadow:0 1px 2px rgba(31,26,23,.04)">
+            <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin-bottom:8px">Pings</div>
+            <sc-for list="{{ pings }}" as="g" hint-placeholder-count="1">
+              <div style="display:flex;align-items:baseline;gap:8px;padding:6px 0">
+                <span style="flex:1;font:400 13px/1.5 Inter,sans-serif"><b style="font-weight:600">{{ g.who }}</b> proposed {{ g.pos }}{{ g.note }}</span>
+                <span style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92">{{ g.when }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <input value="{{ posQuery }}" onChange="{{ onPosQuery }}" placeholder="search positions" style="width:100%;margin-top:16px;padding:12px 14px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;font:400 15px/1.4 Inter,sans-serif;color:#1F1A17">
+
+        <div style="display:flex;align-items:baseline;gap:8px;margin:18px 0 10px">
+          <span style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92">The list</span>
+          <span style="flex:1"></span>
+          <span style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92">{{ posDoneLabel }}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+          <sc-for list="{{ positions }}" as="p" hint-placeholder-count="12">
+            <button onClick="{{ p.onOpen }}" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 8px 12px;border-radius:14px;border:1px solid {{ p.border }};background:{{ p.bg }};cursor:pointer;color:#1F1A17" style-hover="border-color:#F8CFC1">
+              <span style="width:40px;height:40px;position:relative;display:block">
+                <span style="position:absolute;left:4px;top:10px;width:32px;height:12px;border-radius:999px;background:{{ p.mark }};transform:rotate({{ p.rotA }})"></span>
+                <span style="position:absolute;left:12px;top:6px;width:16px;height:16px;border-radius:50%;border:2px solid {{ p.mark }};transform:translate({{ p.shift }})"></span>
+              </span>
+              <span style="font:500 12px/1.3 Inter,sans-serif;text-align:center">{{ p.name }}</span>
+              <span style="font:400 11px/1.3 Inter,sans-serif;color:{{ p.doneColor }}">{{ p.doneLabel }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="font:400 12px/1.6 Inter,sans-serif;color:#A39A92;margin-top:16px;text-wrap:pretty">{{ posFooter }}</div>
+      </div>
+      </sc-if>
+
+      <!-- ══════ PROFILE ══════ -->
+      <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+      <div class="noscroll" style="position:absolute;inset:0;overflow-y:auto;padding:4px 20px 120px">
+        <div style="display:flex;align-items:center;gap:14px;padding:14px 0 18px">
+          <div style="width:66px;height:66px;flex:none;border-radius:50%;background:#E2725B;color:#FFF8F2;display:flex;align-items:center;justify-content:center;font:600 26px/1 Inter,sans-serif">CD</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:26px;line-height:1.1">Colombe Duval</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 20px; padding: 14px 0; border-top: 1px solid #E8E1D7; border-bottom: 1px solid #E8E1D7; width: 118px; height: 50px">
+          <button onClick="{{ openFriends }}" style="display:flex;align-items:baseline;gap:7px;background:transparent;border:0;padding:0;cursor:pointer;color:#1F1A17" style-hover="color:#C25A45">
+            
+            
+          </button><span style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:24px;line-height:1;font-variant-numeric:tabular-nums">{{ friendCount }}</span><span style="font:400 13px/1.45 Inter,sans-serif;color:#5C544E">friends</span>
+          
+        </div>
+
+        <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin:22px 0 10px">Your collection</div>
+        <div style="display:flex;gap:10px">
+          <div style="flex:1;background:#F1EAE0;border-radius:14px;padding:13px 14px;box-shadow:0 1px 2px rgba(31,26,23,.04),0 4px 14px rgba(31,26,23,.06)">
+            <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:30px;line-height:1;font-variant-numeric:tabular-nums">{{ beenCount }}</div>
+            <div style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92;margin-top:4px">countries</div>
+          </div>
+          <div style="flex:1;background:#F1EAE0;border-radius:14px;padding:13px 14px;box-shadow:0 1px 2px rgba(31,26,23,.04),0 4px 14px rgba(31,26,23,.06)">
+            <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:30px;line-height:1;font-variant-numeric:tabular-nums">{{ natCount }}</div>
+            <div style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92;margin-top:4px">passports</div>
+          </div>
+          <div style="flex:1;background:#F1EAE0;border-radius:14px;padding:13px 14px;box-shadow:0 1px 2px rgba(31,26,23,.04),0 4px 14px rgba(31,26,23,.06)">
+            <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:30px;line-height:1;font-variant-numeric:tabular-nums;color:#E2725B">{{ beenPct }}</div>
+            <div style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92;margin-top:4px">of world</div>
+          </div>
+        </div>
+
+        <button onClick="{{ openHistory }}" style="width:100%;display:flex;align-items:center;gap:12px;margin-top:16px;background:#F1EAE0;border:0;border-radius:14px;padding:16px;cursor:pointer;text-align:left;color:#1F1A17;box-shadow:0 1px 2px rgba(31,26,23,.04),0 4px 14px rgba(31,26,23,.06)" style-hover="background:#FCEAE3">
+          <span style="flex:1;font:600 17px/1.3 Inter,sans-serif">History</span>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#A39A92" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+        </button>
+
+        <button onClick="{{ openSignup }}" style="width:100%;display:flex;align-items:center;gap:12px;margin-top:10px;background:#F1EAE0;border:0;border-radius:14px;padding:16px;cursor:pointer;text-align:left;color:#1F1A17;box-shadow:0 1px 2px rgba(31,26,23,.04),0 4px 14px rgba(31,26,23,.06)" style-hover="background:#FCEAE3">
+          <span style="flex:1;font:600 17px/1.3 Inter,sans-serif">Backfill your collection</span>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#A39A92" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+        </button>
+
+        <sc-if value="{{ notPro }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ openProWall }}" style="width:100%;display:flex;align-items:center;gap:12px;margin-top:10px;background:#FCEAE3;border:0;border-radius:14px;padding:16px;cursor:pointer;text-align:left;color:#1F1A17" style-hover="background:#F8CFC1">
+            <span style="flex:1">
+              <span style="display:block;font:600 17px/1.3 Inter,sans-serif">Been In Pro</span>
+              <span style="display:block;font:400 13px/1.45 Inter,sans-serif;color:#5C544E;margin-top:2px">Positions and city-level stats</span>
+            </span>
+            <span style="font:600 13px/1 Inter,sans-serif;color:#C25A45">Upgrade</span>
+          </button>
+        </sc-if>
+
+        <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin:24px 0 10px">Your maps</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <sc-for list="{{ myMaps }}" as="m" hint-placeholder-count="1">
+            <button onClick="{{ m.onOpen }}" style="width:100%;display:flex;align-items:center;gap:12px;background:#FFFDF9;border:1px solid #E8E1D7;border-radius:14px;padding:15px 16px;cursor:pointer;text-align:left;color:#1F1A17" style-hover="background:#FCEAE3;border-color:#F8CFC1">
+              <span style="flex:1">
+                <span style="display:block;font-family:Fraunces,Georgia,serif;font-weight:400;font-size:20px;line-height:1.2">{{ m.name }}</span>
+                <span style="display:block;font:400 13px/1.45 Inter,sans-serif;color:#5C544E;margin-top:2px">{{ m.summary }}</span>
+              </span>
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#A39A92" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+            </button>
+          </sc-for>
+          <button onClick="{{ openNewMap }}" style="width:100%;padding:14px;border-radius:14px;border:1px dashed #D6CFC6;background:transparent;cursor:pointer;color:#5C544E;font:500 15px/1 Inter,sans-serif" style-hover="color:#C25A45;border-color:#F8CFC1">+ Start a new map</button>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══════ OVERLAY: HISTORY ══════ -->
+      <sc-if value="{{ showHistory }}" hint-placeholder-val="{{ false }}">
+      <div class="noscroll" style="position:absolute;inset:0;background:#FAF6F0;z-index:6;overflow-y:auto">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid #E8E1D7;position:sticky;top:0;background:#FAF6F0;z-index:2">
+          <button onClick="{{ closeOverlay }}" style="background:transparent;border:0;cursor:pointer;padding:0;display:flex;color:#1F1A17"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"></path></svg></button>
+          <span style="font:600 17px/1.3 Inter,sans-serif">History</span>
+        </div>
+        <div style="padding:16px 20px 120px;display:flex;flex-direction:column;gap:12px">
+          <sc-for list="{{ history }}" as="e" hint-placeholder-count="4">
+            <div style="position:relative;background:#F1EAE0;border-radius:14px;padding:12px 16px 14px;box-shadow:0 1px 2px rgba(31,26,23,.04),0 4px 14px rgba(31,26,23,.06)">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:20px;line-height:1;flex:none">{{ e.flag }}</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:20px;line-height:1.2">{{ e.title }}</div>
+                  <div style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92;margin-top:2px">{{ e.sub }}</div>
+                </div>
+                <sc-if value="{{ e.private }}" hint-placeholder-val="{{ false }}">
+                  <span style="flex:none;width:26px;height:26px;border-radius:50%;background:#FCEAE3;color:#C25A45;display:flex;align-items:center;justify-content:center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+                  </span>
+                </sc-if>
+                <button onClick="{{ e.onMenu }}" style="width:28px;height:28px;flex:none;background:transparent;border:0;cursor:pointer;color:#A39A92;padding:0;display:flex;align-items:center;justify-content:center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>
+                </button>
+              </div>
+              <sc-if value="{{ e.isStub }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ e.onDetails }}" style="width:100%;margin-top:10px;padding:10px;border-radius:8px;border:1px dashed #D6CFC6;background:transparent;cursor:pointer;color:#5C544E;font:500 13px/1 Inter,sans-serif" style-hover="color:#C25A45;border-color:#F8CFC1">Add details — optional</button>
+              </sc-if>
+              <sc-if value="{{ e.isFull }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ e.onOpen }}" style="display:block;width:100%;text-align:left;background:transparent;border:0;padding:0;margin-top:10px;cursor:pointer;color:#1F1A17">
+                  <span style="display:flex;align-items:center;gap:8px">
+                    <span style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92">Passport</span>
+                    <span style="font:500 14px/1.3 Inter,sans-serif">{{ e.nationality }}</span>
+                    <span style="flex:1"></span>
+                    <span style="font-size:17px;line-height:1">{{ e.emoji }}</span>
+                  </span>
+                  <sc-if value="{{ e.note }}" hint-placeholder-val="{{ true }}">
+                    <span style="display:block;font-family:Fraunces,Georgia,serif;font-weight:400;font-size:16px;line-height:1.4;margin-top:8px;text-wrap:pretty">“{{ e.note }}”</span>
+                  </sc-if>
+                  <span style="display:block;font:400 12px/1.4 Inter,sans-serif;color:#A39A92;margin-top:8px">{{ e.meta }}</span>
+                </button>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══════ OVERLAY: POST DETAIL ══════ -->
+      <sc-if value="{{ showDetail }}" hint-placeholder-val="{{ false }}">
+      <div class="noscroll" style="position:absolute;inset:0;background:#FAF6F0;z-index:8;overflow-y:auto">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid #E8E1D7;position:sticky;top:0;background:#FAF6F0;z-index:2">
+          <button onClick="{{ closeDetail }}" style="background:transparent;border:0;cursor:pointer;padding:0;display:flex;color:#1F1A17"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"></path></svg></button>
+          <span style="font:600 17px/1.3 Inter,sans-serif">{{ detail.headerLabel }}</span>
+        </div>
+        <div style="padding:18px 20px 120px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="width:42px;height:42px;flex:none;border-radius:50%;background:{{ detail.color }};color:#fff;display:flex;align-items:center;justify-content:center;font:600 17px/1 Inter,sans-serif">{{ detail.initials }}</span>
+            <div style="flex:1;min-width:0">
+              <div style="font:600 16px/1.3 Inter,sans-serif">{{ detail.who }}</div>
+              <div style="font:400 13px/1.45 Inter,sans-serif;color:#5C544E;margin-top:1px">{{ detail.headline }}</div>
+            </div>
+            <span style="font-size:22px;line-height:1">{{ detail.emoji }}</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px;margin-top:16px">
+            <span style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92">Passport</span>
+            <span style="font:500 15px/1.3 Inter,sans-serif">{{ detail.passport }}</span>
+          </div>
+          <sc-if value="{{ detail.place }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;color:#5C544E">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.4 7-11a7 7 0 1 0-14 0c0 4.6 7 11 7 11Z"></path><circle cx="12" cy="10" r="2.4"></circle></svg>
+              <span style="font:400 14px/1.45 Inter,sans-serif">{{ detail.place }}</span>
+              <span style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92">{{ detail.placeTag }}</span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ detail.note }}" hint-placeholder-val="{{ true }}">
+            <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:21px;line-height:1.4;margin-top:12px;text-wrap:pretty">“{{ detail.note }}”</div>
+          </sc-if>
+          <sc-if value="{{ detail.photo }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:14px;height:200px;border-radius:14px;border:1px solid #E8E1D7;background-image:repeating-linear-gradient(135deg,rgba(226,114,91,.1) 0 7px,transparent 7px 14px);display:flex;align-items:flex-end;padding:10px">
+              <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#5C544E;background:#FAF6F0;border-radius:4px;padding:3px 6px">photo</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ detail.showPartner }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:14px;border-radius:14px;border:1px dashed #D6CFC6;padding:12px 14px;display:flex;align-items:center;gap:10px">
+              <span style="color:#C25A45;display:flex"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
+              <span style="font:400 13px/1.45 Inter,sans-serif;color:#5C544E">for your eyes only — {{ detail.partner }}</span>
+            </div>
+          </sc-if>
+          <div style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92;margin-top:12px">{{ detail.when }}</div>
+
+          <div style="display:flex;align-items:center;gap:12px;margin-top:16px;padding:14px 0;border-top:1px solid #E8E1D7;border-bottom:1px solid #E8E1D7">
+            <button onClick="{{ detail.onKudos }}" style="width:38px;height:38px;flex:none;border-radius:50%;border:1px solid {{ detail.kudosBorder }};background:{{ detail.kudosBg }};color:{{ detail.kudosColor }};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 180ms">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 22V11l4.5-8a2.5 2.5 0 0 1 2.3 3.4L12.8 9H18a2.5 2.5 0 0 1 2.4 3.1l-1.6 7A2.5 2.5 0 0 1 16.4 22H7Z"></path><path d="M7 11H4.5A1.5 1.5 0 0 0 3 12.5v8A1.5 1.5 0 0 0 4.5 22H7"></path></svg>
+            </button>
+            <div style="display:flex;align-items:center">
+              <sc-for list="{{ detail.kudosPeople }}" as="k" hint-placeholder-count="3">
+                <span style="width:28px;height:28px;border-radius:50%;background:{{ k.color }};color:#fff;display:flex;align-items:center;justify-content:center;font:600 11px/1 Inter,sans-serif;margin-right:-8px;border:1.5px solid #FAF6F0">{{ k.initials }}</span>
+              </sc-for>
+            </div>
+            <span style="font:400 13px/1.45 Inter,sans-serif;color:#5C544E;margin-left:12px">{{ detail.kudosLabel }}</span>
+          </div>
+
+          <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin:20px 0 14px">{{ detail.commentHeader }}</div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <sc-for list="{{ detail.comments }}" as="c" hint-placeholder-count="2">
+              <div style="display:flex;gap:10px">
+                <span style="width:28px;height:28px;flex:none;border-radius:50%;background:{{ c.color }};color:#fff;display:flex;align-items:center;justify-content:center;font:600 11px/1 Inter,sans-serif">{{ c.initials }}</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font:400 14px/1.5 Inter,sans-serif"><b style="font-weight:600">{{ c.who }}</b> {{ c.text }}</div>
+                  <div style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92;margin-top:2px">{{ c.when }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:18px">
+            <input value="{{ commentDraft }}" onChange="{{ onCommentInput }}" placeholder="say something witty…" style="flex:1;min-width:0;padding:12px 14px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;font:400 15px/1.4 Inter,sans-serif;color:#1F1A17">
+            <button onClick="{{ submitComment }}" style="padding:12px 16px;border-radius:8px;border:0;background:#E2725B;color:#FFF8F2;font:600 15px/1 Inter,sans-serif;cursor:pointer" style-hover="background:#C25A45">Send</button>
+          </div>
+          <div style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92;margin-top:10px;text-wrap:pretty">{{ detail.visibilityNote }}</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══════ OVERLAY: FRIENDS ══════ -->
+      <sc-if value="{{ showFriends }}" hint-placeholder-val="{{ false }}">
+      <div class="noscroll" style="position:absolute;inset:0;background:#FAF6F0;z-index:6;overflow-y:auto">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid #E8E1D7;position:sticky;top:0;background:#FAF6F0;z-index:2">
+          <button onClick="{{ closeOverlay }}" style="background:transparent;border:0;cursor:pointer;padding:0;display:flex;color:#1F1A17"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"></path></svg></button>
+          <span style="font:600 17px/1.3 Inter,sans-serif">{{ friendsTitle }}</span>
+        </div>
+        <div style="padding:14px 20px 120px">
+          <input value="{{ friendQuery }}" onChange="{{ onFriendQuery }}" placeholder="Search friends" style="width:100%;padding:12px 14px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;font:400 15px/1.4 Inter,sans-serif;color:#1F1A17;margin-bottom:8px">
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ friendList }}" as="f" hint-placeholder-count="5">
+              <button onClick="{{ f.onOpen }}" style="display:flex;align-items:center;gap:12px;padding:12px 8px;background:transparent;border:0;border-radius:14px;cursor:pointer;text-align:left;color:#1F1A17" style-hover="background:#FCEAE3">
+                <span style="width:40px;height:40px;flex:none;border-radius:50%;background:{{ f.color }};color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px/1 Inter,sans-serif">{{ f.initials }}</span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font:600 15px/1.3 Inter,sans-serif">{{ f.name }}</span>
+                  <span style="display:block;font:400 12px/1.4 Inter,sans-serif;color:#A39A92;margin-top:2px">{{ f.status }}</span>
+                </span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A39A92" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══════ OVERLAY: SOMEONE'S PROFILE ══════ -->
+      <sc-if value="{{ showPerson }}" hint-placeholder-val="{{ false }}">
+      <div class="noscroll" style="position:absolute;inset:0;background:#FAF6F0;z-index:7;overflow-y:auto">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid #E8E1D7;position:sticky;top:0;background:#FAF6F0;z-index:2">
+          <button onClick="{{ backFromPerson }}" style="background:transparent;border:0;cursor:pointer;padding:0;display:flex;color:#1F1A17"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"></path></svg></button>
+          <span style="font:600 17px/1.3 Inter,sans-serif">Profile</span>
+        </div>
+        <div style="padding:20px 20px 120px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:64px;height:64px;flex:none;border-radius:50%;background:{{ person.color }};color:#fff;display:flex;align-items:center;justify-content:center;font:600 24px/1 Inter,sans-serif">{{ person.initials }}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:25px;line-height:1.1">{{ person.name }}</div>
+              <div style="font:400 13px/1.45 Inter,sans-serif;color:#5C544E;margin-top:3px">{{ person.status }}</div>
+            </div>
+          </div>
+
+          <sc-if value="{{ person.isStranger }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ addFriend }}" style="width:100%;margin-top:20px;padding:14px;border-radius:8px;border:0;background:#E2725B;color:#FFF8F2;font:600 15px/1 Inter,sans-serif;cursor:pointer" style-hover="background:#C25A45">Add friend</button>
+            <div style="margin-top:16px;border-radius:14px;border:1px dashed #D6CFC6;padding:16px;font:400 13px/1.6 Inter,sans-serif;color:#5C544E;text-wrap:pretty">Nothing to see until you're friends. Send the request — one accept from either side and you're both through customs.</div>
+          </sc-if>
+
+          <sc-if value="{{ person.isFriend }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ person.onFriends }}" style="display:flex;align-items:baseline;gap:7px;margin-top:18px;padding:14px 0;width:100%;background:transparent;border:0;border-top:1px solid #E8E1D7;border-bottom:1px solid #E8E1D7;cursor:pointer;color:#1F1A17;text-align:left" style-hover="color:#C25A45">
+              <span style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:24px;line-height:1;font-variant-numeric:tabular-nums">{{ person.friendCount }}</span>
+              <span style="font:400 13px/1.45 Inter,sans-serif;color:#5C544E">friends</span>
+            </button>
+            <div style="display:flex;align-items:center;gap:10px;margin:22px 0 12px">
+              <span style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92">Wall</span>
+              <span style="flex:1;height:1px;background:#E8E1D7"></span>
+              <span style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92">map stays private</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <sc-for list="{{ person.posts }}" as="q" hint-placeholder-count="2">
+                <button onClick="{{ q.onOpen }}" style="text-align:left;background:#F1EAE0;border:0;border-radius:14px;padding:13px 16px;cursor:pointer;color:#1F1A17;box-shadow:0 1px 2px rgba(31,26,23,.04),0 4px 14px rgba(31,26,23,.06)" style-hover="background:#FCEAE3">
+                  <span style="display:flex;align-items:center;gap:8px">
+                    <span style="font-size:17px;line-height:1">{{ q.flag }}</span>
+                    <span style="flex:1;font:400 13px/1.45 Inter,sans-serif;color:#5C544E">{{ q.headline }}</span>
+                    <span style="font-size:17px;line-height:1">{{ q.emoji }}</span>
+                  </span>
+                  <span style="display:block;font-family:Fraunces,Georgia,serif;font-weight:400;font-size:17px;line-height:1.4;margin-top:8px;text-wrap:pretty">“{{ q.note }}”</span>
+                  <span style="display:block;font:400 12px/1.4 Inter,sans-serif;color:#A39A92;margin-top:8px">{{ q.when }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══════ OVERLAY: OWN MAP ══════ -->
+      <sc-if value="{{ showMap2 }}" hint-placeholder-val="{{ false }}">
+      <div class="noscroll" style="position:absolute;inset:0;background:#FAF6F0;z-index:6;overflow-y:auto">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid #E8E1D7;position:sticky;top:0;background:#FAF6F0;z-index:2">
+          <button onClick="{{ closeOverlay }}" style="background:transparent;border:0;cursor:pointer;padding:0;display:flex;color:#1F1A17"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"></path></svg></button>
+          <span style="flex:1;font:600 17px/1.3 Inter,sans-serif">{{ openMapName }}</span>
+          <button onClick="{{ openMapMenu }}" style="width:30px;height:30px;background:transparent;border:0;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;color:#A39A92" style-hover="color:#C25A45">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>
+          </button>
+        </div>
+        <div style="padding:16px 20px 120px">
+          <sc-if value="{{ renaming }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:8px;margin-bottom:16px">
+              <input value="{{ mapDraft }}" onChange="{{ onMapDraft }}" style="flex:1;min-width:0;padding:12px 14px;border-radius:8px;border:1.5px solid #E2725B;background:#FFFDF9;font:400 16px/1.4 Inter,sans-serif;color:#1F1A17">
+              <button onClick="{{ saveRename }}" style="padding:12px 16px;border-radius:8px;border:0;background:#E2725B;color:#FFF8F2;font:600 15px/1 Inter,sans-serif;cursor:pointer">Save</button>
+            </div>
+          </sc-if>
+
+          <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:28px;line-height:1.15">{{ openMapName }}</div>
+          <div style="font:400 13px/1.45 Inter,sans-serif;color:#5C544E;margin-top:3px">{{ openMapSub }}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+            <sc-for list="{{ openMapNats }}" as="n" hint-placeholder-count="1">
+              <span style="display:flex;align-items:center;gap:7px;padding:8px 13px;border-radius:999px;background:#FCEAE3;color:#C25A45;font:500 13px/1.3 Inter,sans-serif">
+                <span style="font-size:14px;line-height:1">{{ n.flag }}</span>
+                <span>{{ n.label }}</span>
+              </span>
+            </sc-for>
+            
+          </div>
+
+          <div style="margin-top:16px;border-radius:22px;background:#FFFDF9;border:1px solid #E8E1D7;height:252px;padding:14px;box-shadow:0 1px 2px rgba(31,26,23,.04),0 4px 14px rgba(31,26,23,.06)">
+            <x-import component-from-global-scope="world-map" from="./world-map.js" logged="{{ openMapLogged }}" hint-size="100%,100%"></x-import>
+          </div>
+
+          <div style="display:flex;gap:12px;margin-top:16px">
+            <div style="flex:1;background:#F1EAE0;border-radius:14px;padding:13px 16px 15px;box-shadow:0 1px 2px rgba(31,26,23,.04),0 4px 14px rgba(31,26,23,.06)">
+              <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:38px;line-height:1;font-variant-numeric:tabular-nums">{{ openMapCount }}</div>
+              <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin-top:5px">Countries</div>
+            </div>
+            <div style="flex:1;background:#F1EAE0;border-radius:14px;padding:13px 16px 15px;box-shadow:0 1px 2px rgba(31,26,23,.04),0 4px 14px rgba(31,26,23,.06)">
+              <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:38px;line-height:1;font-variant-numeric:tabular-nums;color:#E2725B">{{ openMapPct }}</div>
+              <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin-top:5px">Of the world</div>
+            </div>
+          </div>
+
+          <button onClick="{{ openAddToMap }}" style="width:100%;margin-top:16px;padding:14px;border-radius:8px;border:0;background:#E2725B;color:#FFF8F2;font:600 15px/1 Inter,sans-serif;cursor:pointer" style-hover="background:#C25A45">Add a country</button>
+          
+
+          <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin:24px 0 8px">Stamps</div>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ openMapList }}" as="r" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #E8E1D7">
+                <span style="font-size:19px;line-height:1">{{ r.flag }}</span>
+                <span style="flex:1;font-family:Fraunces,Georgia,serif;font-weight:400;font-size:19px;line-height:1.2">{{ r.country }}</span>
+                <span style="font-size:16px;line-height:1">{{ r.emoji }}</span>
+                <span style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92">{{ r.when }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top:20px;background:#F1EAE0;border-radius:14px;padding:14px 16px;font:400 13px/1.6 Inter,sans-serif;color:#5C544E;text-wrap:pretty">{{ mapStatsNote }}</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══════ OVERLAY: NEW MAP ══════ -->
+      <sc-if value="{{ showNewMap }}" hint-placeholder-val="{{ false }}">
+      <div class="noscroll" style="position:absolute;inset:0;background:#FAF6F0;z-index:9;overflow-y:auto">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid #E8E1D7">
+          <button onClick="{{ closeOverlay }}" style="background:transparent;border:0;cursor:pointer;padding:0;display:flex;color:#1F1A17"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+          <span style="font:600 17px/1.3 Inter,sans-serif">New map</span>
+        </div>
+        <div style="padding:20px 20px 120px">
+          <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:26px;line-height:1.15">Name It Whatever You Like</div>
+          <div style="font:400 13px/1.45 Inter,sans-serif;color:#5C544E;margin-top:6px;text-wrap:pretty">A map of its own, sitting beside Been and Been In. You own it, you name it, you're the only one who adds to it.</div>
+          <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin:20px 0 8px">Map name</div>
+          <input value="{{ newMapName }}" onChange="{{ onNewMapName }}" placeholder="Colombe &amp; Alex" style="width:100%;padding:13px 14px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;font:400 16px/1.4 Inter,sans-serif;color:#1F1A17">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+            <sc-for list="{{ nameSuggestions }}" as="sg" hint-placeholder-count="3">
+              <button onClick="{{ sg.onPick }}" style="padding:8px 13px;border-radius:999px;border:1px solid #E8E1D7;background:#F1EAE0;cursor:pointer;font:400 13px/1.3 Inter,sans-serif;color:#5C544E" style-hover="background:#FCEAE3;color:#C25A45">{{ sg.label }}</button>
+            </sc-for>
+          </div>
+
+          <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin:20px 0 8px">Their passport · one or more</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <sc-for list="{{ newMapNatChips }}" as="n" hint-placeholder-count="1">
+              <button onClick="{{ n.onRemove }}" style="display:flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;border:1px solid #F8CFC1;background:#FCEAE3;color:#C25A45;cursor:pointer;font:500 13px/1.3 Inter,sans-serif">
+                <span style="font-size:14px;line-height:1">{{ n.flag }}</span>
+                <span>{{ n.label }}</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+              </button>
+            </sc-for>
+            <button onClick="{{ openMapNatPicker }}" style="padding:9px 13px;border-radius:999px;border:1px dashed #D6CFC6;background:transparent;cursor:pointer;color:#5C544E;font:500 13px/1.3 Inter,sans-serif" style-hover="color:#C25A45;border-color:#F8CFC1">{{ mapNatAddLabel }}</button>
+          </div>
+          <div style="font:400 12px/1.5 Inter,sans-serif;color:#A39A92;margin-top:8px;text-wrap:pretty">Dual citizens welcome. Every passport listed here counts on your Been In map once you stamp this map.</div>
+
+          <button onClick="{{ createMap }}" disabled="{{ createBlocked }}" style="width:100%;margin-top:24px;padding:14px;border-radius:8px;border:0;background:{{ createBg }};color:#FFF8F2;font:600 15px/1 Inter,sans-serif;cursor:pointer;opacity:{{ createOpacity }}">Next — backfill the map</button>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══════ OVERLAY: CITY PICKER ══════ -->
+      <sc-if value="{{ showCityPicker }}" hint-placeholder-val="{{ false }}">
+      <div class="noscroll" style="position:absolute;inset:0;background:#FAF6F0;z-index:11;overflow-y:auto">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid #E8E1D7;position:sticky;top:0;background:#FAF6F0">
+          <button onClick="{{ closeCityPicker }}" style="background:transparent;border:0;cursor:pointer;padding:0;display:flex;color:#1F1A17"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"></path></svg></button>
+          <span style="flex:1;font:600 17px/1.3 Inter,sans-serif">{{ cityPickerTitle }}</span>
+        </div>
+        <div style="padding:14px 12px 120px">
+          <div style="font:400 13px/1.45 Inter,sans-serif;color:#5C544E;padding:0 8px 10px">Pick from the list. No freeform — the cities are fixed per country.</div>
+          <sc-for list="{{ cityPickerOptions }}" as="o" hint-placeholder-count="5">
+            <button onClick="{{ o.onPick }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:13px 10px;border-radius:14px;background:transparent;border:0;cursor:pointer;text-align:left;color:#1F1A17" style-hover="background:#FCEAE3">
+              <span style="flex:1;font:400 15px/1.4 Inter,sans-serif">{{ o.name }}</span>
+              <span style="font:400 12px/1.4 Inter,sans-serif;color:{{ o.tagColor }}">{{ o.tag }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══════ SHEET ══════ -->
+      <sc-if value="{{ showSheet }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;z-index:14;background:rgba(31,26,23,.32);display:flex;flex-direction:column;justify-content:flex-end;padding:10px">
+        <div style="background:#FFFDF9;border-radius:22px;padding:6px 8px 8px;box-shadow:0 2px 6px rgba(31,26,23,.08),0 18px 40px rgba(31,26,23,.1)">
+          <div style="padding:12px 12px 8px;font:400 12px/1.4 Inter,sans-serif;color:#A39A92;text-align:center">{{ sheet.title }}</div>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <sc-for list="{{ sheet.actions }}" as="a" hint-placeholder-count="2">
+              <button onClick="{{ a.onPick }}" style="text-align:left;padding:14px 14px;border-radius:14px;background:transparent;border:0;cursor:pointer;font:500 15px/1.3 Inter,sans-serif;color:{{ a.color }}" style-hover="background:#FCEAE3">{{ a.label }}</button>
+            </sc-for>
+            <button onClick="{{ closeSheet }}" style="text-align:left;padding:14px;border-radius:14px;background:transparent;border:0;cursor:pointer;font:500 15px/1.3 Inter,sans-serif;color:#A39A92" style-hover="background:#F1EAE0">Cancel</button>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══════ POSITION DETAIL SHEET ══════ -->
+      <sc-if value="{{ showPosDetail }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:15;background:rgba(31,26,23,.32);display:flex;flex-direction:column;justify-content:flex-end">
+        <div style="background:#FAF6F0;border-radius:22px 22px 0 0;padding:18px 20px 28px;box-shadow:0 2px 6px rgba(31,26,23,.08),0 18px 40px rgba(31,26,23,.1)">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="width:46px;height:46px;position:relative;flex:none;display:block">
+              <span style="position:absolute;left:5px;top:12px;width:36px;height:13px;border-radius:999px;background:#E2725B;transform:rotate({{ posDetail.rotA }})"></span>
+              <span style="position:absolute;left:14px;top:8px;width:18px;height:18px;border-radius:50%;border:2px solid #C25A45;transform:translate({{ posDetail.shift }})"></span>
+            </span>
+            <div style="flex:1;min-width:0">
+              <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:23px;line-height:1.15">{{ posDetail.name }}</div>
+              <div style="font:400 12px/1.45 Inter,sans-serif;color:#5C544E;margin-top:2px">{{ posDetail.status }}</div>
+            </div>
+            <button onClick="{{ closePosDetail }}" style="background:transparent;border:0;cursor:pointer;padding:0;display:flex;color:#A39A92"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+          </div>
+
+          <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin:18px 0 8px">Note · optional</div>
+          <input value="{{ posNote }}" onChange="{{ onPosNote }}" placeholder="{{ posNotePlaceholder }}" style="width:100%;padding:12px 14px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;font:400 15px/1.4 Inter,sans-serif;color:#1F1A17">
+
+          <button onClick="{{ toggleDone }}" style="width:100%;margin-top:14px;padding:14px;border-radius:8px;border:0;background:{{ posDetail.doneBg }};color:{{ posDetail.doneColor }};font:600 15px/1 Inter,sans-serif;cursor:pointer">{{ posDetail.doneAction }}</button>
+          <sc-if value="{{ paired }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ sendPing }}" style="width:100%;margin-top:10px;padding:14px;border-radius:8px;border:1px solid #E8E1D7;background:transparent;color:#1F1A17;font:600 15px/1 Inter,sans-serif;cursor:pointer" style-hover="background:#FCEAE3">{{ pingLabel }}</button>
+          </sc-if>
+          <sc-if value="{{ solo }}" hint-placeholder-val="{{ true }}">
+            <div style="font:400 12px/1.5 Inter,sans-serif;color:#A39A92;margin-top:12px;text-wrap:pretty">Solo log. Private to you, and not shareable with anyone — pair up if you want to compare notes.</div>
+          </sc-if>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══════ TOAST ══════ -->
+      <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:16px;right:16px;bottom:16px;z-index:18;background:rgba(31,26,23,.94);color:#FAF6F0;border-radius:14px;padding:13px 16px;font:400 14px/1.45 Inter,sans-serif;text-wrap:pretty">{{ toast }}</div>
+      </sc-if>
+
+    </div>
+
+    <!-- ══════ TAB BAR ══════ -->
+    <div style="height:98px;flex:none;display:flex;align-items:flex-start;padding:0 4px 34px;border-top:1px solid #E8E1D7;background:rgba(250,246,240,.86);backdrop-filter:blur(20px)">
+      <button onClick="{{ tabMap }}" style="flex:1;height:64px;background:transparent;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0;color:{{ cMap }};transition:color 180ms">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width: 21px; height: 22px"><polygon points="3,6 9,3 15,6 21,3 21,18 15,21 9,18 3,21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg>
+        <span style="font:500 10px/1.3 Inter,sans-serif">Map</span>
+      </button>
+      <button onClick="{{ tabFeed }}" style="flex:1;height:64px;background:transparent;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0;color:{{ cFeed }};transition:color 180ms">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"></path></svg>
+        <span style="font:500 10px/1.3 Inter,sans-serif">Feed</span>
+      </button>
+      <div style="flex:1;height:64px;display:flex;align-items:flex-start;justify-content:center">
+        <button onClick="{{ openAdd }}" style="width:52px;height:52px;margin-top:-2px;border-radius:50%;border:0;background:#E2725B;color:#FFF8F2;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 0 rgba(194,90,69,.25),0 6px 12px rgba(194,90,69,.18);transition:background 120ms" style-hover="background:#C25A45">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+        </button>
+      </div>
+      <button onClick="{{ tabPositions }}" style="flex:1;height:64px;background:transparent;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0;color:{{ cPositions }};transition:color 180ms">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="9" r="3.2"></circle><circle cx="16" cy="15" r="3.2"></circle><path d="M10.5 11.5l3 1"></path></svg>
+        <span style="font:500 10px/1.3 Inter,sans-serif">Positions</span>
+      </button>
+      <button onClick="{{ tabProfile }}" style="flex:1;height:64px;background:transparent;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0;color:{{ cProfile }};transition:color 180ms">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-7 8-7s8 3 8 7"></path></svg>
+        <span style="font:500 10px/1.3 Inter,sans-serif">You</span>
+      </button>
+    </div>
+
+    <!-- ══════ PRO PAYWALL ══════ -->
+    <sc-if value="{{ showProWall }}" hint-placeholder-val="{{ false }}">
+    <div class="noscroll" style="position:absolute;inset:0;z-index:24;background:#FAF6F0;overflow-y:auto">
+      <div style="display:flex;justify-content:flex-end;padding:16px 20px 0">
+        <button onClick="{{ closeProWall }}" style="width:34px;height:34px;border-radius:50%;border:0;background:#F1EAE0;color:#1F1A17;cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:#E8E1D7">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div style="padding:8px 24px 40px">
+        <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#C25A45">Been In Pro</div>
+        <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:32px;line-height:1.12;margin-top:8px;text-wrap:pretty;font-variation-settings:'opsz' 144,'SOFT' 60,'WONK' 1">Positions Requires Pro</div>
+        <div style="font:400 14px/1.55 Inter,sans-serif;color:#5C544E;margin-top:10px;text-wrap:pretty">The list, the pairing, the pings — plus city-level stats on your map. One subscription, both features.</div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:22px">
+          <sc-for list="{{ proPerks }}" as="k" hint-placeholder-count="3">
+            <div style="display:flex;align-items:flex-start;gap:12px;background:#F1EAE0;border-radius:14px;padding:14px 16px">
+              <span style="width:26px;height:26px;flex:none;border-radius:50%;background:#FCEAE3;color:#C25A45;display:flex;align-items:center;justify-content:center">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17 19 7"></path></svg>
+              </span>
+              <span style="flex:1">
+                <span style="display:block;font:600 15px/1.35 Inter,sans-serif">{{ k.title }}</span>
+                <span style="display:block;font:400 13px/1.5 Inter,sans-serif;color:#5C544E;margin-top:2px">{{ k.body }}</span>
+              </span>
+            </div>
+          </sc-for>
+        </div>
+
+        <button onClick="{{ goPro }}" style="width:100%;margin-top:24px;padding:15px;border-radius:8px;border:0;background:#E2725B;color:#FFF8F2;font:600 16px/1 Inter,sans-serif;cursor:pointer" style-hover="background:#C25A45">Unlock Pro · £4.99/mo</button>
+        <div style="font:400 12px/1.5 Inter,sans-serif;color:#A39A92;margin-top:12px;text-align:center">Cancel any time. Your maps stay yours either way.</div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ══════ SIGNUP / BACKFILL CHECKLIST ══════ -->
+    <sc-if value="{{ showSignup }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:26;background:#FAF6F0;display:flex;flex-direction:column">
+      <div style="flex:none;padding:18px 20px 10px">
+        <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92">{{ signupStepLabel }}</div>
+        <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:26px;line-height:1.15;margin-top:6px">{{ signupTitle }}</div>
+      </div>
+
+      <sc-if value="{{ signupChecklist }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:none;padding:6px 20px 10px">
+          <input value="{{ signupQuery }}" onChange="{{ onSignupQuery }}" placeholder="search countries" style="width:100%;padding:12px 14px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;font:400 15px/1.4 Inter,sans-serif;color:#1F1A17">
+        </div>
+        <div class="noscroll" style="flex:1;overflow-y:auto;padding:0 12px 12px">
+          <sc-for list="{{ signupOptions }}" as="o" hint-placeholder-count="10">
+            <div>
+              <button onClick="{{ o.onToggle }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:12px 10px;border-radius:14px;background:{{ o.bg }};border:0;cursor:pointer;text-align:left;color:#1F1A17" style-hover="background:#FCEAE3">
+                <span style="width:22px;height:22px;flex:none;border-radius:6px;border:1.5px solid {{ o.boxBorder }};background:{{ o.boxBg }};color:#FFF8F2;display:flex;align-items:center;justify-content:center">
+                  <sc-if value="{{ o.ticked }}" hint-placeholder-val="{{ false }}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17 19 7"></path></svg>
+                  </sc-if>
+                </span>
+                <span style="font-size:18px;line-height:1;flex:none">{{ o.flag }}</span>
+                <span style="flex:1;font:400 15px/1.4 Inter,sans-serif">{{ o.label }}</span>
+              </button>
+              <sc-if value="{{ o.ticked }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;align-items:center;gap:10px;padding:0 10px 12px 44px">
+                  <span style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92;flex:none">Date · optional</span>
+                  <input type="date" value="{{ o.date }}" onChange="{{ o.onDate }}" style="flex:1;min-width:0;padding:9px 11px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;font:400 13px/1.4 Inter,sans-serif;color:#1F1A17">
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ signupBuilder }}" hint-placeholder-val="{{ true }}">
+        <div class="noscroll" style="flex:1;overflow-y:auto;padding:6px 20px 16px">
+          <div style="background:#F1EAE0;border-radius:14px;padding:14px 16px 16px">
+            <div style="display:flex;gap:8px">
+              <button onClick="{{ openSignupCountry }}" style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:12px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;cursor:pointer;text-align:left;color:#1F1A17" style-hover="border-color:#F8CFC1">
+                <span style="font-size:17px;line-height:1">{{ pairCountryFlag }}</span>
+                <span style="flex:1;min-width:0;font:400 14px/1.4 Inter,sans-serif;color:{{ pairCountryColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ pairCountryValue }}</span>
+              </button>
+              <button onClick="{{ openSignupNat }}" style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:12px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;cursor:pointer;text-align:left;color:#1F1A17" style-hover="border-color:#F8CFC1">
+                <span style="font-size:17px;line-height:1">{{ pairNatFlag }}</span>
+                <span style="flex:1;min-width:0;font:400 14px/1.4 Inter,sans-serif;color:{{ pairNatColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ pairNatValue }}</span>
+              </button>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <input type="date" value="{{ pairDate }}" onChange="{{ onPairDate }}" style="flex:1;min-width:0;padding:11px 12px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;font:400 14px/1.4 Inter,sans-serif;color:#1F1A17">
+              <input value="{{ pairName }}" onChange="{{ onPairName }}" placeholder="name · optional" style="flex:1;min-width:0;padding:11px 12px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;font:400 14px/1.4 Inter,sans-serif;color:#1F1A17">
+            </div>
+            <button onClick="{{ addPair }}" disabled="{{ pairBlocked }}" style="width:100%;margin-top:10px;padding:12px;border-radius:8px;border:0;background:{{ pairBtnBg2 }};color:#FFF8F2;font:600 14px/1 Inter,sans-serif;cursor:pointer;opacity:{{ pairOpacity }}">Add to the record</button>
+          </div>
+
+          <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin:20px 0 4px">{{ pairsLabel }}</div>
+          <sc-for list="{{ signupPairs }}" as="r" hint-placeholder-count="2">
+            <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #E8E1D7">
+              <span style="font-size:18px;line-height:1;flex:none">{{ r.flag }}</span>
+              <span style="flex:1;min-width:0">
+                <span style="display:block;font:400 15px/1.4 Inter,sans-serif">{{ r.label }}</span>
+                <span style="display:block;font:400 12px/1.4 Inter,sans-serif;color:#A39A92;margin-top:2px">{{ r.sub }}</span>
+              </span>
+              <button onClick="{{ r.onRemove }}" style="flex:none;width:28px;height:28px;border-radius:50%;border:0;background:transparent;color:#A39A92;cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:#F1EAE0;color:#B23B2A">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+              </button>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <div style="flex:none;padding:12px 20px 34px;border-top:1px solid #E8E1D7;display:flex;align-items:center;gap:10px">
+        <button onClick="{{ signupSkip }}" style="padding:14px 16px;border-radius:8px;border:0;background:transparent;color:#5C544E;font:500 14px/1 Inter,sans-serif;cursor:pointer">Skip</button>
+        <span style="flex:1;font:400 12px/1.4 Inter,sans-serif;color:#A39A92;text-align:right">{{ signupCountLabel }}</span>
+        <button onClick="{{ signupNext }}" style="padding:14px 20px;border-radius:8px;border:0;background:#E2725B;color:#FFF8F2;font:600 15px/1 Inter,sans-serif;cursor:pointer" style-hover="background:#C25A45">{{ signupNextLabel }}</button>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ══════ ADD ENTRY ══════ -->
+    <sc-if value="{{ showAdd }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:20;background:#FAF6F0;display:flex;flex-direction:column">
+      <div style="flex:none;display:flex;align-items:center;gap:12px;padding:16px 20px 12px">
+        <button onClick="{{ addBack }}" style="background:transparent;border:0;cursor:pointer;padding:0;display:flex;color:#1F1A17"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"></path></svg></button>
+        <span style="flex:1;font:600 17px/1.3 Inter,sans-serif">{{ addTitle }}</span>
+      </div>
+
+      <div class="noscroll" style="flex:1;overflow-y:auto;padding:16px 20px 24px">
+
+          <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:26px;line-height:1.15">{{ step1Title }}</div>
+
+          <sc-if value="{{ wantsPassport }}" hint-placeholder-val="{{ true }}">
+            <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin:22px 0 8px">Passport · one or more</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <sc-for list="{{ draftNatChips }}" as="n" hint-placeholder-count="1">
+                <button onClick="{{ n.onRemove }}" style="display:flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;border:1px solid #F8CFC1;background:#FCEAE3;color:#C25A45;cursor:pointer;font:500 13px/1.3 Inter,sans-serif">
+                  <span style="font-size:14px;line-height:1">{{ n.flag }}</span>
+                  <span>{{ n.label }}</span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+                </button>
+              </sc-for>
+              <button onClick="{{ openNatPicker }}" style="padding:9px 13px;border-radius:999px;border:1px dashed #D6CFC6;background:transparent;cursor:pointer;color:#5C544E;font:500 13px/1.3 Inter,sans-serif" style-hover="color:#C25A45;border-color:#F8CFC1">{{ draftNatAddLabel }}</button>
+            </div>
+          </sc-if>
+
+          <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin:18px 0 8px">Stamp · country</div>
+          <button onClick="{{ openCountryPicker }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:14px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;cursor:pointer;text-align:left;color:#1F1A17" style-hover="border-color:#F8CFC1;background:#FCEAE3">
+            <span style="font-size:18px;line-height:1">{{ countryFlag }}</span>
+            <span style="flex:1;font:400 15px/1.4 Inter,sans-serif;color:{{ countryColor }}">{{ countryValue }}</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A39A92" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+          </button>
+
+          <sc-if value="{{ wantsName }}" hint-placeholder-val="{{ true }}">
+            <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin:22px 0 8px">Name · private</div>
+            <input value="{{ draftName }}" onChange="{{ onDraftName }}" placeholder="only you will see this" style="width:100%;padding:14px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;font:400 15px/1.4 Inter,sans-serif;color:#1F1A17">
+          </sc-if>
+
+          <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin:18px 0 8px">Date</div>
+          <input type="date" value="{{ draftDate }}" onChange="{{ onDraftDate }}" style="width:100%;padding:13px 14px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;font:400 15px/1.4 Inter,sans-serif;color:#1F1A17">
+
+          <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin:18px 0 8px">Location · optional</div>
+          <input value="{{ draftPlace }}" onChange="{{ onDraftPlace }}" placeholder="a rooftop bar" style="width:100%;padding:14px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;font:400 15px/1.4 Inter,sans-serif;color:#1F1A17">
+          <sc-if value="{{ placeSwitchOn }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ togglePlacePub }}" style="width:100%;display:flex;align-items:center;gap:12px;margin-top:10px;padding:13px 14px;border-radius:14px;border:1px solid {{ placeBorder }};background:{{ placeCardBg }};cursor:pointer;text-align:left;color:#1F1A17;transition:all 180ms">
+              <span style="flex:1;font:400 14px/1.45 Inter,sans-serif">{{ placeHint }}</span>
+              <span style="width:44px;height:26px;flex:none;border-radius:999px;background:{{ placeTrack }};position:relative;display:block;transition:background 180ms">
+                <span style="position:absolute;top:3px;left:{{ placeKnob }};width:20px;height:20px;border-radius:50%;background:#FFFDF9;box-shadow:0 1px 3px rgba(31,26,23,.2);transition:left 180ms cubic-bezier(0.4,0,0.2,1)"></span>
+              </span>
+            </button>
+          </sc-if>
+          <sc-if value="{{ placeSwitchOff }}" hint-placeholder-val="{{ false }}">
+            <div style="font:400 12px/1.5 Inter,sans-serif;color:#A39A92;margin-top:10px;text-wrap:pretty">Private post — the location stays private with it.</div>
+          </sc-if>
+
+          <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin:18px 0 8px">Note · optional</div>
+          <textarea value="{{ draftNote }}" onChange="{{ onDraftNote }}" rows="3" placeholder="spill the tea… or keep it classy." style="width:100%;padding:14px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;font:400 15px/1.5 Inter,sans-serif;color:#1F1A17;resize:none"></textarea>
+
+          <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin:18px 0 10px">Emoji · optional</div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <sc-for list="{{ emojiGroups }}" as="g" hint-placeholder-count="4">
+              <div>
+                <div style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92">{{ g.name }}</div>
+                <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:7px">
+                  <sc-for list="{{ g.items }}" as="em" hint-placeholder-count="24">
+                    <button onClick="{{ em.onPick }}" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:19px;border-radius:8px;background:{{ em.bg }};border:1px solid {{ em.border }};cursor:pointer;padding:0;transition:all 180ms">{{ em.char }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin:20px 0 8px">Photo · optional</div>
+          <button onClick="{{ togglePhoto }}" style="width:100%;height:132px;border-radius:14px;border:1px solid #E8E1D7;background-color:#FFFDF9;background-image:{{ photoBg }};cursor:pointer;display:flex;align-items:center;justify-content:center;color:#1F1A17" style-hover="border-color:#F8CFC1">
+            <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#5C544E;background:#FAF6F0;border-radius:4px;padding:4px 8px">{{ photoLabel }}</span>
+          </button>
+          <div style="font:400 12px/1.5 Inter,sans-serif;color:#A39A92;margin-top:8px;text-wrap:pretty">Keep it well-intentioned — photos containing pornographic or illicit content will get your account taken down.</div>
+
+          <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin:20px 0 8px">Position · always private</div>
+          <button onClick="{{ openPosPicker }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:14px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;cursor:pointer;text-align:left;color:#1F1A17" style-hover="border-color:#F8CFC1;background:#FCEAE3">
+            <span style="flex:1;font:400 15px/1.4 Inter,sans-serif;color:{{ posTagColor }}">{{ posTagValue }}</span>
+            <span style="font:400 12px/1.4 Inter,sans-serif;color:#A39A92">never on the feed</span>
+          </button>
+
+          <button onClick="{{ toggleShare }}" style="width:100%;display:flex;align-items:center;gap:14px;margin-top:20px;padding:16px;border-radius:14px;border:1px solid {{ shareBorder }};background:{{ shareCardBg }};cursor:pointer;text-align:left;color:#1F1A17;transition:all 180ms">
+            <span style="flex:1">
+              <span style="display:block;font:600 16px/1.3 Inter,sans-serif">Share to your wall</span>
+              <span style="display:block;font:400 13px/1.45 Inter,sans-serif;color:#5C544E;margin-top:2px">{{ shareHint }}</span>
+            </span>
+            <span style="width:48px;height:28px;flex:none;border-radius:999px;background:{{ shareTrack }};position:relative;display:block;transition:background 180ms">
+              <span style="position:absolute;top:3px;left:{{ shareKnob }};width:22px;height:22px;border-radius:50%;background:#FFFDF9;box-shadow:0 1px 3px rgba(31,26,23,.2);transition:left 180ms cubic-bezier(0.4,0,0.2,1)"></span>
+            </span>
+          </button>
+
+          <div style="margin-top:20px;background:#F1EAE0;border-radius:14px;padding:14px 16px">
+            <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#A39A92;margin-bottom:6px">Summary</div>
+            <div style="font:400 14px/1.55 Inter,sans-serif;text-wrap:pretty">{{ draftSummary }}</div>
+          </div>
+
+      </div>
+
+      <div style="flex:none;padding:14px 20px 34px;border-top:1px solid #E8E1D7;display:flex;gap:10px">
+        <button onClick="{{ addNext }}" disabled="{{ addBlocked }}" style="flex:1;padding:15px;border-radius:8px;border:0;background:{{ nextBg }};color:#FFF8F2;font:600 15px/1 Inter,sans-serif;cursor:pointer;opacity:{{ nextOpacity }};transition:background 120ms">{{ addNextLabel }}</button>
+      </div>
+
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ showSignIn }}" hint-placeholder-val="{{ true }}">
+    <div class="noscroll" style="position:absolute;inset:0;z-index:40;background:#FAF6F0;overflow-y:auto;display:flex;flex-direction:column">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:40px 28px 0">
+        <div style="font:500 11px/1.3 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#C25A45">Been In</div>
+        <div style="font-family:Fraunces,Georgia,serif;font-weight:400;font-size:38px;line-height:1.08;margin-top:10px;text-wrap:pretty;font-variation-settings:'opsz' 144,'SOFT' 70,'WONK' 1">Ditch the red flags. Collect the world's.</div>
+        <div style="font:400 14px/1.55 Inter,sans-serif;color:#5C544E;margin-top:12px;text-wrap:pretty">Two maps, one passport, nobody watching but you.</div>
+      </div>
+      <div style="flex:none;padding:28px 24px 40px;display:flex;flex-direction:column;gap:10px">
+        <button onClick="{{ signInGoogle }}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:15px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;cursor:pointer;color:#1F1A17;font:600 15px/1 Inter,sans-serif" style-hover="background:#FCEAE3;border-color:#F8CFC1">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.6 9.2c0-.6-.05-1.2-.16-1.75H9v3.32h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.56 2.66-3.86 2.66-6.55Z" fill="#4285F4"></path><path d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.81.54-1.84.86-3.06.86-2.35 0-4.34-1.58-5.05-3.71H.95v2.34A9 9 0 0 0 9 18Z" fill="#34A853"></path><path d="M3.95 10.71a5.4 5.4 0 0 1 0-3.42V4.95H.95a9 9 0 0 0 0 8.1l3-2.34Z" fill="#FBBC05"></path><path d="M9 3.58c1.32 0 2.5.46 3.44 1.35l2.58-2.57C13.46.9 11.43 0 9 0A9 9 0 0 0 .95 4.95l3 2.34C4.66 5.16 6.65 3.58 9 3.58Z" fill="#EA4335"></path></svg>
+          <span>Sign in with Google</span>
+        </button>
+        <button onClick="{{ signInApple }}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:15px;border-radius:8px;border:0;background:#1F1A17;cursor:pointer;color:#FAF6F0;font:600 15px/1 Inter,sans-serif" style-hover="background:#000000">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.8c0-2.4 1.9-3.5 2-3.6-1.1-1.6-2.8-1.8-3.4-1.9-1.5-.1-2.8.9-3.5.9-.7 0-1.8-.9-3-.9-1.6 0-3 .9-3.8 2.4-1.6 2.8-.4 6.9 1.2 9.2.8 1.1 1.7 2.3 2.9 2.3 1.2 0 1.6-.8 3-.8s1.8.8 3 .8 2-1.1 2.8-2.2c.9-1.3 1.3-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.6ZM14.3 5.4c.6-.8 1.1-1.9 1-3-1 0-2.1.6-2.8 1.4-.6.7-1.1 1.8-1 2.9 1.1.1 2.2-.5 2.8-1.3Z"></path></svg>
+          <span>Sign in with Apple</span>
+        </button>
+        <button onClick="{{ signInEmail }}" style="width:100%;padding:15px;border-radius:8px;border:0;background:#E2725B;cursor:pointer;color:#FFF8F2;font:600 15px/1 Inter,sans-serif" style-hover="background:#C25A45">Create an account with email</button>
+        <div style="font:400 12px/1.6 Inter,sans-serif;color:#A39A92;text-align:center;margin-top:8px;text-wrap:pretty">Your maps are private to you. Posts stay inside your friend circle.</div>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ pickerOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:30;background:#FAF6F0;display:flex;flex-direction:column">
+        <div style="flex:none;display:flex;align-items:center;gap:12px;padding:16px 20px 12px">
+          <button onClick="{{ closePicker }}" style="background:transparent;border:0;cursor:pointer;padding:0;display:flex;color:#1F1A17"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"></path></svg></button>
+          <span style="flex:1;font:600 17px/1.3 Inter,sans-serif">{{ pickerTitle }}</span>
+        </div>
+        <div style="flex:none;padding:4px 20px 12px">
+          <input value="{{ pickerQuery }}" onChange="{{ onPickerQuery }}" placeholder="type to narrow it down" style="width:100%;padding:13px 14px;border-radius:8px;border:1px solid #E8E1D7;background:#FFFDF9;font:400 15px/1.4 Inter,sans-serif;color:#1F1A17">
+        </div>
+        <div class="noscroll" style="flex:1;overflow-y:auto;padding:0 12px 24px">
+          <sc-for list="{{ pickerOptions }}" as="o" hint-placeholder-count="9">
+            <button onClick="{{ o.onPick }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:13px 10px;border-radius:14px;background:transparent;border:0;cursor:pointer;text-align:left;color:#1F1A17" style-hover="background:#FCEAE3">
+              <span style="font-size:19px;line-height:1">{{ o.flag }}</span>
+              <span style="flex:1;font:400 15px/1.4 Inter,sans-serif">{{ o.label }}</span>
+              <span style="color:{{ o.tickColor }};display:flex"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17 19 7"></path></svg></span>
+            </button>
+          </sc-for>
+        </div>
+        <sc-if value="{{ pickerMulti }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:none;padding:12px 20px 34px;border-top:1px solid #E8E1D7;display:flex;align-items:center;gap:12px">
+            <span style="flex:1;font:400 13px/1.45 Inter,sans-serif;color:#A39A92">{{ pickerDraftLabel }}</span>
+            <button onClick="{{ savePicker }}" style="padding:14px 22px;border-radius:8px;border:0;background:#E2725B;color:#FFF8F2;font:600 15px/1 Inter,sans-serif;cursor:pointer" style-hover="background:#C25A45">Save</button>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+  </div>
+
+  <div style="max-width:390px;font:400 12px/1.7 Inter,sans-serif;color:#A39A92;text-align:center;text-wrap:pretty">Start on the sign-up checklist, then swipe the map to flip Been ⇄ Been In. The Positions tab opens the Pro paywall until you unlock it — Pro also opens By City.</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showSignup&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;proUnlocked&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Pro&quot;}}">
+class Component extends DCLogic {
+  static WORLD = 195;
+  static CONT = { AF: ['Africa', 54], AS: ['Asia', 48], EU: ['Europe', 44], NA: ['North America', 23], SA: ['South America', 12], OC: ['Oceania', 14] };
+
+  static PAIRS = [
+    ['Afghanistan','Afghan','AS','AF'],['Albania','Albanian','EU','AL'],['Algeria','Algerian','AF','DZ'],
+    ['Argentina','Argentinian','SA','AR'],['Armenia','Armenian','AS','AM'],['Australia','Australian','OC','AU'],
+    ['Austria','Austrian','EU','AT'],['Bangladesh','Bangladeshi','AS','BD'],['Belgium','Belgian','EU','BE'],
+    ['Bolivia','Bolivian','SA','BO'],['Brazil','Brazilian','SA','BR'],['Bulgaria','Bulgarian','EU','BG'],
+    ['Cambodia','Cambodian','AS','KH'],['Cameroon','Cameroonian','AF','CM'],['Canada','Canadian','NA','CA'],
+    ['Chile','Chilean','SA','CL'],['China','Chinese','AS','CN'],['Colombia','Colombian','SA','CO'],
+    ['Costa Rica','Costa Rican','NA','CR'],['Croatia','Croatian','EU','HR'],['Cuba','Cuban','NA','CU'],
+    ['Czechia','Czech','EU','CZ'],['Denmark','Danish','EU','DK'],['Ecuador','Ecuadorian','SA','EC'],
+    ['Egypt','Egyptian','AF','EG'],['Estonia','Estonian','EU','EE'],['Ethiopia','Ethiopian','AF','ET'],
+    ['Finland','Finnish','EU','FI'],['France','French','EU','FR'],['Georgia','Georgian','AS','GE'],
+    ['Germany','German','EU','DE'],['Ghana','Ghanaian','AF','GH'],['Greece','Greek','EU','GR'],
+    ['Hungary','Hungarian','EU','HU'],['Iceland','Icelandic','EU','IS'],['India','Indian','AS','IN'],
+    ['Indonesia','Indonesian','AS','ID'],['Iran','Iranian','AS','IR'],['Ireland','Irish','EU','IE'],
+    ['Israel','Israeli','AS','IL'],['Italy','Italian','EU','IT'],['Jamaica','Jamaican','NA','JM'],
+    ['Japan','Japanese','AS','JP'],['Jordan','Jordanian','AS','JO'],['Kenya','Kenyan','AF','KE'],
+    ['Latvia','Latvian','EU','LV'],['Lebanon','Lebanese','AS','LB'],['Lithuania','Lithuanian','EU','LT'],
+    ['Malaysia','Malaysian','AS','MY'],['Mexico','Mexican','NA','MX'],['Morocco','Moroccan','AF','MA'],
+    ['Nepal','Nepali','AS','NP'],['Netherlands','Dutch','EU','NL'],['New Zealand','New Zealander','OC','NZ'],
+    ['Nigeria','Nigerian','AF','NG'],['Norway','Norwegian','EU','NO'],['Pakistan','Pakistani','AS','PK'],
+    ['Panama','Panamanian','NA','PA'],['Peru','Peruvian','SA','PE'],['Philippines','Filipino','AS','PH'],
+    ['Poland','Polish','EU','PL'],['Portugal','Portuguese','EU','PT'],['Romania','Romanian','EU','RO'],
+    ['Senegal','Senegalese','AF','SN'],['Serbia','Serbian','EU','RS'],['Singapore','Singaporean','AS','SG'],
+    ['Slovakia','Slovak','EU','SK'],['Slovenia','Slovenian','EU','SI'],['South Africa','South African','AF','ZA'],
+    ['South Korea','Korean','AS','KR'],['Spain','Spanish','EU','ES'],['Sri Lanka','Sri Lankan','AS','LK'],
+    ['Sweden','Swedish','EU','SE'],['Switzerland','Swiss','EU','CH'],['Tanzania','Tanzanian','AF','TZ'],
+    ['Thailand','Thai','AS','TH'],['Tunisia','Tunisian','AF','TN'],['Turkey','Turkish','AS','TR'],
+    ['Ukraine','Ukrainian','EU','UA'],['United Kingdom','British','EU','GB'],['United States','American','NA','US'],
+    ['Uruguay','Uruguayan','SA','UY'],['Vietnam','Vietnamese','AS','VN']
+  ];
+
+  static CITIES = {
+    Vietnam: ['Hanoi', 'Ho Chi Minh City', 'Da Nang', 'Hue', 'Hoi An'],
+    Japan: ['Tokyo', 'Osaka', 'Kyoto', 'Sapporo', 'Fukuoka', 'Nagoya'],
+    Colombia: ['Bogot\u00E1', 'Medell\u00EDn', 'Cartagena', 'Cali', 'Santa Marta'],
+    Portugal: ['Lisbon', 'Porto', 'Faro', 'Coimbra', 'Braga'],
+    Iceland: ['Reykjav\u00EDk', 'Akureyri', 'V\u00EDk', 'Selfoss'],
+    France: ['Paris', 'Lyon', 'Marseille', 'Bordeaux', 'Nice', 'Toulouse'],
+    Spain: ['Madrid', 'Barcelona', 'Seville', 'Valencia', 'Bilbao'],
+    Morocco: ['Marrakesh', 'Casablanca', 'Fez', 'Tangier', 'Rabat'],
+    Mexico: ['Mexico City', 'Oaxaca', 'Guadalajara', 'Tulum', 'Monterrey'],
+    Greece: ['Athens', 'Thessaloniki', 'Heraklion', 'Rhodes'],
+    Italy: ['Rome', 'Milan', 'Florence', 'Naples', 'Venice'],
+    Brazil: ['Rio de Janeiro', 'S\u00E3o Paulo', 'Salvador', 'Florian\u00F3polis'],
+    Thailand: ['Bangkok', 'Chiang Mai', 'Phuket', 'Krabi']
+  };
+
+  static EMOJI_GROUPS = [
+    { name: 'Smileys & people', chars: '\u{1F60F}\u{1F60A}\u{1F60D}\u{1F618}\u{1F617}\u{1F61C}\u{1F60B}\u{1F92D}\u{1F92B}\u{1F914}\u{1F644}\u{1F62C}\u{1F605}\u{1F602}\u{1F923}\u{1F979}\u{1F97A}\u{1F633}\u{1F631}\u{1F975}\u{1F976}\u{1F60C}\u{1F634}\u{1F929}\u{1F608}\u{1F47D}\u{1F921}\u{1F480}\u{1F47B}\u{1F638}\u{1F63B}\u{1F63C}\u{1F64C}\u{1F44F}\u{1F44D}\u{1F91D}\u{1F91E}\u{1F44C}\u{1F919}\u{1F44B}\u{1F485}\u{1F483}\u{1F46F}\u{1F46B}\u{1F48F}\u{1F491}\u{1F46D}\u{1F46C}' },
+    { name: 'Hearts & symbols', chars: '\u2764\u{FE0F}\u{1F9E1}\u{1F49B}\u{1F49A}\u{1F499}\u{1F49C}\u{1F5A4}\u{1F90D}\u{1F90E}\u{1F494}\u{1F495}\u{1F496}\u{1F497}\u{1F498}\u{1F49D}\u{1F49F}\u{1F48B}\u{1F4A6}\u{1F4AB}\u2728\u{1F525}\u26A1\u{FE0F}\u{1F4A5}\u{1F4A2}\u{1F4AF}\u2757\u2753\u{1F51E}\u{1F52F}\u{1F3B5}\u{1F3B6}\u{1F514}\u{1F4A8}\u{1F4AD}' },
+    { name: 'Places & travel', chars: '\u{1F30D}\u{1F30E}\u{1F30F}\u2708\u{FE0F}\u{1F6EB}\u{1F6A2}\u26F5\u{1F6A4}\u{1F686}\u{1F68C}\u{1F695}\u{1F3E8}\u{1F3E9}\u26F1\u{FE0F}\u{1F305}\u{1F307}\u{1F303}\u{1F309}\u26FA\u{1F3AA}\u{1F6D6}\u{1F6C0}\u{1F6BF}\u{1F5FF}\u{1F320}\u{1F319}\u2600\u{FE0F}\u26C5\u{1F30A}' },
+    { name: 'Food & drink', chars: '\u{1F942}\u{1F37E}\u{1F377}\u{1F378}\u{1F379}\u{1F37B}\u{1F376}\u{1F943}\u{1F964}\u2615\u{1F375}\u{1F9CA}\u{1F347}\u{1F352}\u{1F353}\u{1F351}\u{1F34C}\u{1F34D}\u{1F345}\u{1F336}\u{FE0F}\u{1F955}\u{1F32E}\u{1F355}\u{1F35D}\u{1F363}\u{1F36B}\u{1F36C}\u{1F370}\u{1F382}\u{1F36F}' },
+    { name: 'Objects & activity', chars: '\u{1F389}\u{1F38A}\u{1F381}\u{1F380}\u{1F3AF}\u{1F3B2}\u{1F0CF}\u{1F3AD}\u{1F3A8}\u{1F3AC}\u{1F3A4}\u{1F3B8}\u{1F941}\u{1F4F8}\u{1F4F1}\u231B\u23F0\u{1F513}\u{1F512}\u{1F511}\u{1F6CC}\u{1F457}\u{1F459}\u{1F460}\u{1F452}\u{1F484}\u{1F48D}\u{1F3C6}\u{1F947}\u{1F6A9}\u{1F4DD}' }
+  ];
+  static AVCOLORS = { CD: '#E2725B', AM: '#C25A45', PR: '#3D5A4A', JW: '#B8893A', NO: '#D89B92', TL: '#9A4534', MS: '#5C544E', IB: '#3D5A4A' };
+  static MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  state = {
+    tab: 'map', side: 0, dragX: 0,
+    overlay: null, personBack: null, person: null,
+    detailOn: false, detailId: null, detailKind: null,
+    friendQuery: '', friendsOf: '', commentDraft: '',
+    sheet: null, sheetTarget: '', toast: '',
+    renaming: false, mapDraft: '', openMapId: 'm1', newMapName: '',
+    pro: false, cityOpen: '', cityPicker: '', addedCities: [],
+    add: null, picker: null, pickerQuery: '',
+    signedIn: false, newMapNats: [], passNat: '', passCountry: '', azOpen: '', pickerDraft: [],
+    pairDraft: { country: '', nationality: '', date: '', name: '' },
+    signup: null, signupQuery: '',
+    posQuery: '', posOpen: '', posNote: '', partner: '', pairIncoming: 'Alex Moreau', pairOut: '',
+    positions: [
+      { id: 'p1', name: 'The Lotus', done: true, note: 'a classic for a reason', rotA: '-14deg', shift: '6px,-4px' },
+      { id: 'p2', name: 'Spoons', done: true, note: '', rotA: '8deg', shift: '-7px,3px' },
+      { id: 'p3', name: 'The Chair', done: false, note: '', rotA: '-32deg', shift: '4px,6px' },
+      { id: 'p4', name: 'The Bridge', done: false, note: '', rotA: '18deg', shift: '0px,-8px' },
+      { id: 'p5', name: 'The Arch', done: false, note: '', rotA: '-6deg', shift: '8px,2px' },
+      { id: 'p6', name: 'The Cradle', done: true, note: '', rotA: '26deg', shift: '-5px,-5px' },
+      { id: 'p7', name: 'The Hammock', done: false, note: '', rotA: '-22deg', shift: '2px,7px' },
+      { id: 'p8', name: 'The Crescent', done: false, note: '', rotA: '40deg', shift: '-8px,0px' },
+      { id: 'p9', name: 'The Butterfly', done: false, note: '', rotA: '-40deg', shift: '5px,-6px' },
+      { id: 'p10', name: 'Tandem', done: false, note: '', rotA: '12deg', shift: '7px,5px' },
+      { id: 'p11', name: 'The Scissors', done: false, note: '', rotA: '-52deg', shift: '-4px,4px' },
+      { id: 'p12', name: 'The Waterfall', done: false, note: '', rotA: '62deg', shift: '3px,-7px' }
+    ],
+    pings: [],
+    maps: [{ id: 'm1', name: 'Colombe & Alex', nationalities: ['French', 'Moroccan'], entries: [
+      { id: 'r1', country: 'Morocco', emoji: '\u2728', when: '5 hours ago' },
+      { id: 'r2', country: 'Spain', emoji: '\u{1F942}', when: '3 weeks ago' },
+      { id: 'r3', country: 'Mexico', emoji: '\u{1F525}', when: '4 months ago' }
+    ] }],
+    entries: [
+      { id: 'e1', country: 'Vietnam', nationality: 'Vietnamese', city: 'Hanoi', place: 'a night train', placePub: true, date: '2026-09-05', name: 'Linh', note: 'Monsoon rain, no complaints.', emoji: '\u{1F60F}', photo: false, pub: true, ord: 96, when: '4 days ago', kudos: ['PR', 'NO'], iK: false, comments: [{ who: 'Priya Raman', initials: 'PR', text: 'weather permitting.', when: '3d' }] },
+      { id: 'e2', country: 'Japan', nationality: 'Colombian', city: 'Tokyo', place: 'a listening bar', placePub: false, date: '2026-08-24', name: 'Camila', note: 'Met in Shibuya. Stayed for the B-side.', emoji: '\u2728', photo: true, pub: true, ord: 336, when: '2 weeks ago', kudos: ['AM'], iK: false, comments: [] },
+      { id: 'e3', country: 'Colombia', nationality: 'Colombian', city: 'Cartagena', place: 'a rooftop pool', placePub: false, date: '2026-07-11', name: 'Camila', note: 'Week two. She warned me about the heat.', emoji: '\u{1F336}\u{FE0F}', photo: false, pub: false, ord: 1440, when: '2 months ago', kudos: [], iK: false, comments: [] },
+      { id: 'e4', country: 'Portugal', nationality: 'Portuguese', city: 'Lisbon', place: 'a rooftop bar', placePub: true, date: '2026-04-02', name: 'Tom\u00E1s', note: 'Rooftop in Alfama. Worth the hill.', emoji: '\u{1F319}', photo: false, pub: true, ord: 3600, when: '5 months ago', kudos: ['NO', 'JW', 'TL'], iK: true, comments: [{ who: 'Nadia Osei', initials: 'NO', text: 'that hill is no joke.', when: '5mo' }] },
+      { id: 'e5', country: 'Iceland', nationality: 'Australian', city: 'Reykjav\u00EDk', place: '', placePub: false, date: '2026-01-18', name: 'Marcus', note: 'Nothing to see here except the northern lights.', emoji: '\u26A1\u{FE0F}', photo: false, pub: false, ord: 5800, when: '8 months ago', kudos: [], iK: false, comments: [] },
+      { id: 'e6', country: 'France', nationality: 'French', city: 'Lyon', place: 'a long lunch', placePub: true, date: '2025-09-12', name: '\u00C9lise', note: 'Long lunch, longer afternoon.', emoji: '\u{1F942}', photo: false, pub: true, ord: 8760, when: '1 year ago', kudos: ['PR'], iK: false, comments: [] }
+    ],
+    feed: [
+      { id: 'f1', who: 'Priya Raman', initials: 'PR', nationality: 'Greek', country: 'Greece', place: 'a ferry terminal', note: 'Ferry delayed. Ferry forgiven.', emoji: '\u{1F525}', photo: false, when: '2h', ord: 2, kudos: ['NO', 'JW', 'CD', 'TL'], iK: false, comments: [{ who: 'Nadia Osei', initials: 'NO', text: 'the ferry always wins.', when: '1h' }, { who: 'Jonas Weber', initials: 'JW', text: 'kudos, genuinely.', when: '40m' }] },
+      { id: 'f2', who: 'Alex Moreau', initials: 'AM', isRel: true, country: 'Morocco', mapName: 'Alex & the Atlas', when: '5h', ord: 5 },
+      { id: 'f3', who: 'Jonas Weber', initials: 'JW', nationality: 'Brazilian', country: 'Brazil', place: '', note: 'Carnival math checks out.', emoji: '\u{1F608}', photo: true, when: '1d', ord: 24, kudos: ['PR'], iK: false, comments: [] },
+      { id: 'f4', who: 'Nadia Osei', initials: 'NO', nationality: 'Italian', country: 'Italy', place: 'his kitchen', note: 'He cooked. Then he cooked.', emoji: '\u{1F4AB}', photo: false, when: '2d', ord: 48, kudos: ['CD', 'TL'], iK: true, comments: [{ who: 'Priya Raman', initials: 'PR', text: 'a man with a stockpot.', when: '2d' }] },
+      { id: 'f5', who: 'Theo Lindqvist', initials: 'TL', nationality: 'Thai', country: 'Thailand', place: '', note: 'Full moon, half a plan.', emoji: '\u{1F319}', photo: false, when: '3d', ord: 72, kudos: [], iK: false, comments: [] }
+    ],
+    friends: [
+      { name: 'Alex Moreau', initials: 'AM', friends: 64, friend: true, status: 'friends since 2022' },
+      { name: 'Priya Raman', initials: 'PR', friends: 121, friend: true, status: 'friends since 2024' },
+      { name: 'Jonas Weber', initials: 'JW', friends: 88, friend: true, status: 'friends since 2025' },
+      { name: 'Nadia Osei', initials: 'NO', friends: 203, friend: true, status: 'friends since 2023' },
+      { name: 'Theo Lindqvist', initials: 'TL', friends: 41, friend: true, status: 'friends since 2026' },
+      { name: 'Marta Silva', initials: 'MS', friends: 57, friend: false, status: 'not a friend yet' },
+      { name: 'Idris Bello', initials: 'IB', friends: 19, friend: false, status: 'not a friend yet' }
+    ]
+  };
+
+  signIn = how => {
+    this.setState({ signedIn: true });
+    if (this.props.showSignup !== false) this.setState({ signup: { step: 1, countries: [], pairs: [] }, signupQuery: '' });
+    if (how) this.toast('signed in with ' + how + '. welcome aboard.');
+  };
+
+  // ── lookups ───────────────────────────────────────────────
+  byCountry(c) { return Component.PAIRS.find(p => p[0] === c); }
+  byNat(n) { return Component.PAIRS.find(p => p[1] === n); }
+  flagOf(country) {
+    const p = this.byCountry(country);
+    if (!p) return '\u{1F3F4}';
+    return String.fromCodePoint(...p[3].split('').map(ch => 0x1F1E6 + ch.charCodeAt(0) - 65));
+  }
+  natFlagOf(nat) { const p = this.byNat(nat); return p ? this.flagOf(p[0]) : '\u{1F3F4}'; }
+  natsOf(e) {
+    const n = e && e.nationality;
+    return Array.isArray(n) ? n.filter(Boolean) : (n ? [n] : []);
+  }
+  natLabel(e) { return this.natsOf(e).join(' \u00B7 '); }
+  openMultiPicker = kind => {
+    const seed = kind === 'nat' ? this.natsOf(this.state.add)
+      : kind === 'mapNat' ? this.state.newMapNats
+      : (this.openMap().nationalities || []);
+    this.setState({ picker: kind, pickerQuery: '', pickerDraft: seed.slice() });
+  };
+  savePicker = () => {
+    const pk = this.state.picker;
+    const draft = this.state.pickerDraft.slice();
+    if (pk === 'nat') this.patchAdd({ nationality: draft });
+    else if (pk === 'mapNat') this.setState({ newMapNats: draft });
+    else if (pk === 'mapNatAdd') {
+      const name = this.openMap().name;
+      this.setState(st => ({ maps: st.maps.map(m => m.id !== st.openMapId ? m : Object.assign({}, m, { nationalities: draft })) }),
+        () => this.toast(draft.length ? 'passports saved for ' + name + '.' : 'passports cleared for ' + name + '.'));
+    }
+    this.setState({ picker: null, pickerQuery: '', pickerDraft: [] });
+  };
+  natToCountry(nat) { const p = this.byNat(nat); return p ? p[0] : nat; }
+  pct(n) { return (n / Component.WORLD * 100).toFixed(1) + '%'; }
+  color(i) { return Component.AVCOLORS[i] || '#5C544E'; }
+  avatars(l) { return (l || []).map(i => ({ initials: i, color: this.color(i) })); }
+  fmtDate(iso) {
+    if (!iso) return '';
+    const parts = iso.split('-');
+    if (parts.length !== 3) return iso;
+    return Number(parts[2]) + ' ' + Component.MONTHS[Number(parts[1]) - 1] + ' ' + parts[0];
+  }
+  today() { return new Date().toISOString().slice(0, 10); }
+  toast(msg) {
+    clearTimeout(this._t);
+    this.setState({ toast: msg });
+    this._t = setTimeout(() => this.setState({ toast: '' }), 2800);
+  }
+  beenCountries() {
+    const set = new Set(this.state.entries.filter(e => e.country).map(e => e.country));
+    this.state.maps.forEach(m => m.entries.forEach(r => set.add(r.country)));
+    return [...set];
+  }
+  natsLogged() {
+    const set = new Set();
+    this.state.entries.forEach(e => this.natsOf(e).forEach(n => set.add(n)));
+    this.state.maps.forEach(m => { if (m.entries.length) (m.nationalities || []).forEach(n => set.add(n)); });
+    return [...set];
+  }
+  natCountries() { return [...new Set(this.natsLogged().map(n => this.natToCountry(n)))]; }
+  openMap() { return this.state.maps.find(m => m.id === this.state.openMapId) || this.state.maps[0] || { id: '', name: '', entries: [] }; }
+  isPro() { return this.state.pro || !!this.props.proUnlocked; }
+
+  // ── swipe ─────────────────────────────────────────────────
+  onDown = e => { this._x0 = e.clientX; this._drag = true; };
+  onMove = e => { if (this._drag) this.setState({ dragX: Math.max(-160, Math.min(160, e.clientX - this._x0)) }); };
+  onUp = () => {
+    if (!this._drag) return;
+    this._drag = false;
+    const dx = this.state.dragX;
+    let side = this.state.side;
+    if (dx < -55 && side === 0) side = 1;
+    if (dx > 55 && side === 1) side = 0;
+    this.setState({ side, dragX: 0 });
+  };
+
+  // ── add flow ──────────────────────────────────────────────
+  openAdd = (mapId, editId) => {
+    const e = editId ? this.state.entries.find(x => x.id === editId) : null;
+    this.setState({
+      overlay: null,
+      add: {
+        step: 1, mapId: mapId || '', editId: editId || '',
+        nationality: e ? this.natsOf(e) : [], country: e ? e.country : '',
+        date: e && e.date ? e.date : this.today(),
+        name: e ? e.name || '' : '', note: e ? e.note || '' : '', emoji: e ? e.emoji || '' : '',
+        place: e ? e.place || '' : '', placePub: e ? !!e.placePub : true,
+        position: e ? e.position || '' : '',
+        photo: e ? !!e.photo : false, pub: e ? !!e.pub : true
+      }
+    });
+  };
+  patchAdd = p => this.setState(s => ({ add: Object.assign({}, s.add, p) }));
+  addBack = () => this.setState({ add: null });
+  addNext = () => this.publish();
+  publish() {
+    const a = this.state.add;
+    if (a.mapId) {
+      const map = this.state.maps.find(m => m.id === a.mapId) || { name: '' };
+      const r = { id: 'r' + Date.now(), country: a.country, emoji: a.emoji || '', position: a.position || '', when: 'just now' };
+      this.setState(s => ({
+        maps: s.maps.map(m => m.id !== a.mapId ? m : Object.assign({}, m, { entries: [r].concat(m.entries) })),
+        feed: a.pub ? [{ id: 'f' + Date.now(), who: 'Colombe Duval', initials: 'CD', isRel: true, country: a.country, mapName: map.name, when: 'now', ord: -1 }].concat(s.feed) : s.feed,
+        add: null, overlay: 'map2'
+      }));
+      this.toast('stamped ' + a.country + ' on ' + map.name + '.');
+      return;
+    }
+    const base = {
+      country: a.country, nationality: a.nationality, date: a.date, position: a.position || '',
+      name: a.name, note: a.note || '', emoji: a.emoji || '',
+      place: a.place.trim(), placePub: a.pub ? a.placePub : false,
+      photo: a.photo, pub: a.pub, stub: false
+    };
+    if (a.editId) {
+      this.setState(s => ({ entries: s.entries.map(e => e.id !== a.editId ? e : Object.assign({}, e, base)), add: null }));
+      this.toast('details filed. only you can read the name.');
+      return;
+    }
+    const e = Object.assign({ id: 'e' + Date.now(), city: '', ord: -1, when: 'just now', kudos: [], iK: false, comments: [] }, base);
+    this.setState(s => ({ entries: [e].concat(s.entries), add: null, tab: 'feed', overlay: null }));
+    this.toast(a.pub ? 'stamped ' + a.country + ' ' + this.flagOf(a.country) + ' — it\u2019s on your feed now.' : 'stamped ' + a.country + ' ' + this.flagOf(a.country) + ' — nobody else knows.');
+  }
+
+  // ── signup / backfill ─────────────────────────────────────
+  signupToggle = (kind, value) => this.setState(s => {
+    const list = s.signup.countries;
+    const next = list.includes(value) ? list.filter(v => v !== value) : list.concat(value);
+    return { signup: Object.assign({}, s.signup, { countries: next }) };
+  });
+  patchPair = p => this.setState(s => ({ pairDraft: Object.assign({}, s.pairDraft, p) }));
+  setMapImportDate = (country, date) => this.setState(s => ({
+    signup: Object.assign({}, s.signup, { dates: Object.assign({}, s.signup.dates || {}, { [country]: date }) })
+  }));
+  addPair = () => {
+    const d = this.state.pairDraft;
+    if (!d.country || !d.nationality) return;
+    this.setState(s => ({
+      signup: Object.assign({}, s.signup, { pairs: s.signup.pairs.concat([Object.assign({}, d)]) }),
+      pairDraft: { country: '', nationality: '', date: '', name: '' }
+    }));
+  };
+  removePair = i => this.setState(s => ({ signup: Object.assign({}, s.signup, { pairs: s.signup.pairs.filter((x, j) => j !== i) }) }));
+  signupNext = () => {
+    const g = this.state.signup;
+    if (g.mapId) return this.commitMapImport();
+    this.commitSignup();
+  };
+  commitSignup() {
+    const g = this.state.signup;
+    const stubs = g.pairs.map((p, i) => ({
+      id: 'sp' + i + Date.now(), country: p.country, nationality: p.nationality, city: '',
+      place: '', placePub: false, date: p.date || '', name: p.name || '', note: '', emoji: '',
+      position: '', photo: false, pub: false, stub: true, ord: 20000, when: 'backfilled',
+      kudos: [], iK: false, comments: []
+    }));
+    this.setState(s => ({ entries: s.entries.concat(stubs), signup: null, signupQuery: '', tab: 'map', side: 0 }));
+    if (stubs.length) this.toast(stubs.length + ' on the record without the paperwork. details whenever you like.');
+  }
+  commitMapImport() {
+    const g = this.state.signup;
+    const dates = g.dates || {};
+    const rows = g.countries.map(c => ({
+      id: 'r' + c + Date.now(), country: c, emoji: '', date: dates[c] || '',
+      when: dates[c] ? this.fmtDate(dates[c]) : 'backfilled'
+    }));
+    this.setState(s => ({
+      maps: s.maps.map(m => m.id !== g.mapId ? m : Object.assign({}, m, { entries: rows.concat(m.entries) })),
+      signup: null, signupQuery: '', overlay: 'map2', openMapId: g.mapId
+    }));
+    this.toast(rows.length ? rows.length + ' countries backfilled. now logging going forward.' : 'map ready. now logging going forward.');
+  }
+
+  // ── social ────────────────────────────────────────────────
+  toggleFeedKudos = id => this.setState(s => ({ feed: s.feed.map(p => p.id !== id ? p : Object.assign({}, p, { iK: !p.iK, kudos: p.iK ? p.kudos.filter(k => k !== 'CD') : p.kudos.concat('CD') })) }));
+  toggleMyKudos = id => this.setState(s => ({ entries: s.entries.map(p => p.id !== id ? p : Object.assign({}, p, { iK: !p.iK, kudos: p.iK ? p.kudos.filter(k => k !== 'CD') : p.kudos.concat('CD') })) }));
+  submitComment = () => {
+    const text = this.state.commentDraft.trim();
+    if (!text) return;
+    const c = { who: 'Colombe Duval', initials: 'CD', text, when: 'now' };
+    const id = this.state.detailId;
+    const key = this.state.detailKind === 'feed' ? 'feed' : 'entries';
+    this.setState(s => ({ [key]: s[key].map(p => p.id !== id ? p : Object.assign({}, p, { comments: p.comments.concat(c) })), commentDraft: '' }));
+  };
+  openDetail = (kind, id) => this.setState({ detailOn: true, detailKind: kind, detailId: id, commentDraft: '' });
+  openPerson = name => {
+    const f = this.state.friends.find(x => x.name === name) || { name, initials: name.split(' ').map(w => w[0]).join(''), friends: 0, friend: false, status: 'not a friend yet' };
+    this.setState(s => ({ person: f, personBack: s.overlay, overlay: 'person' }));
+  };
+  addFriend = () => {
+    const p = this.state.person;
+    this.setState(s => ({
+      friends: s.friends.map(f => f.name === p.name ? Object.assign({}, f, { friend: true, status: 'friends since today' }) : f),
+      person: Object.assign({}, p, { friend: true, status: 'friends since today' })
+    }));
+    this.toast('you and ' + p.name.split(' ')[0] + ' are friends. both ways, instantly.');
+  };
+  closeOverlay = () => this.setState({ overlay: null, sheet: null, friendsOf: '', renaming: false });
+
+  // ── sheets ────────────────────────────────────────────────
+  openFeedMenu = p => this.setState({ sheet: { title: p.who + '\u2019s post', actions: [{ label: 'Report this post', color: '#B23B2A', kind: 'report' }] }, sheetTarget: p.id });
+  openMineMenu = e => this.setState({
+    sheet: {
+      title: (e.country || this.natLabel(e)) + ' \u00B7 ' + e.when,
+      actions: [
+        { label: e.stub ? 'Add details' : 'Edit stamp', kind: 'edit' },
+        { label: e.pub ? 'Make it private' : 'Share to your wall', kind: 'vis' },
+        { label: 'Erase from the record?', color: '#B23B2A', kind: 'del' }
+      ]
+    }, sheetTarget: e.id
+  });
+  pickSheet = kind => {
+    const id = this.state.sheetTarget;
+    this.setState({ sheet: null });
+    if (kind === 'report') return this.toast('reported. we\u2019ll take it from here \u2014 quietly.');
+    if (kind === 'edit') return this.openAdd('', id);
+    if (kind === 'mapRename') return this.setState({ renaming: true, mapDraft: this.openMap().name });
+    if (kind === 'mapNats') return this.openMultiPicker('mapNatAdd');
+    if (kind === 'mapBackfill') return this.setState({ signup: { mapId: id, step: 1, countries: [], pairs: [], dates: {} }, signupQuery: '' });
+    if (kind === 'vis') {
+      let nowPub = false;
+      return this.setState(s => ({ entries: s.entries.map(e => { if (e.id !== id) return e; nowPub = !e.pub; return Object.assign({}, e, { pub: !e.pub }); }) }),
+        () => this.toast(nowPub ? 'now on your feed and your friends\u2019.' : 'back to private. just for you.'));
+    }
+    if (kind === 'del') this.setState(s => ({ entries: s.entries.filter(e => e.id !== id) }), () => this.toast('erased. the map forgets too.'));
+  };
+
+  // ── positions ─────────────────────────────────────────────
+  openPos = id => {
+    const p = this.state.positions.find(x => x.id === id);
+    this.setState({ posOpen: id, posNote: p ? p.note : '' });
+  };
+  toggleDone = () => {
+    const id = this.state.posOpen;
+    const note = this.state.posNote;
+    let nowDone = false;
+    this.setState(s => ({
+      positions: s.positions.map(p => { if (p.id !== id) return p; nowDone = !p.done; return Object.assign({}, p, { done: !p.done, note }); }),
+      posOpen: ''
+    }), () => this.toast(nowDone ? 'marked done. the record grows.' : 'unmarked. back to the to-do list.'));
+  };
+  sendPing = () => {
+    const p = this.state.positions.find(x => x.id === this.state.posOpen);
+    const note = this.state.posNote.trim();
+    this.setState(s => ({
+      pings: [{ who: 'You', pos: p.name, note: note ? ' \u2014 \u201C' + note + '\u201D' : '', when: 'now' }].concat(s.pings),
+      posOpen: ''
+    }));
+    this.toast('ping sent to ' + this.state.partner.split(' ')[0] + '. ball\u2019s in their court.');
+  };
+  acceptPair = () => {
+    const name = this.state.pairIncoming;
+    this.setState({ partner: name, pairIncoming: '', pairOut: '' });
+    this.toast('paired with ' + name.split(' ')[0] + '. one partner at a time.');
+  };
+
+  renderVals() {
+    const s = this.state;
+    const coral = '#E2725B', coral7 = '#C25A45', coral1 = '#FCEAE3';
+    const ink = '#1F1A17', ink40 = '#A39A92', stone = '#E8E1D7';
+    const a = s.add;
+    const pro = this.isPro();
+    const been = this.beenCountries();
+    const nats = this.natCountries();
+    const active = s.side === 0 ? been : nats;
+
+    const counts = {};
+    active.forEach(c => { const p = this.byCountry(c); if (p) counts[p[2]] = (counts[p[2]] || 0) + 1; });
+    const continents = Object.keys(Component.CONT).map(k => {
+      const [name, total] = Component.CONT[k];
+      const n = counts[k] || 0;
+      const v = n / total * 100;
+      return { name, frac: n + '/' + total, pct: v.toFixed(1) + '%', bar: Math.max(v, n ? 2 : 0) + '%', color: n ? ink : ink40, n, total };
+    }).sort((x, y) => y.n / y.total - x.n / x.total);
+
+    const azList = active.slice().sort((x, y) => x.localeCompare(y)).map(c => {
+      const hit = this.byCountry(c);
+      const natSet = new Set();
+      if (s.side === 0) {
+        s.entries.forEach(e => { if (e.country === c) this.natsOf(e).forEach(n => natSet.add(n)); });
+        s.maps.forEach(m => { if (m.entries.some(r => r.country === c)) (m.nationalities || []).forEach(n => natSet.add(n)); });
+      }
+      const natsHere = [...natSet];
+      return {
+        open: s.azOpen === c,
+        caret: s.azOpen === c ? 'rotate(90deg)' : 'rotate(0deg)',
+        onToggle: () => this.setState({ azOpen: s.azOpen === c ? '' : c }),
+        nats: natsHere.length
+          ? natsHere.sort().map(n => ({ label: n, flag: this.natFlagOf(n) }))
+          : [{ label: 'no passport on file', flag: '\u{1F6C2}' }],
+        name: c, flag: this.flagOf(c),
+        sub: s.side === 0
+          ? (natsHere.length === 1 ? '1 passport' : natsHere.length + ' passports')
+          : (hit ? Component.CONT[hit[2]][0] : '')
+      };
+    });
+
+    // cities
+    const cityMap = {};
+    s.entries.forEach(e => { if (e.country && e.city) { cityMap[e.country] = cityMap[e.country] || []; if (!cityMap[e.country].includes(e.city)) cityMap[e.country].push(e.city); } });
+    s.addedCities.forEach(x => { cityMap[x.country] = cityMap[x.country] || []; if (!cityMap[x.country].includes(x.city)) cityMap[x.country].push(x.city); });
+    been.forEach(c => { cityMap[c] = cityMap[c] || []; });
+    const cityCountries = Object.keys(cityMap).sort((x, y) => x.localeCompare(y)).map(c => ({
+      name: c, flag: this.flagOf(c), cities: cityMap[c].slice().sort(),
+      count: cityMap[c].length === 0 ? 'none yet' : (cityMap[c].length === 1 ? '1 city' : cityMap[c].length + ' cities'),
+      open: s.cityOpen === c, caret: s.cityOpen === c ? 'rotate(90deg)' : 'rotate(0deg)',
+      onToggle: () => this.setState({ cityOpen: s.cityOpen === c ? '' : c }),
+      onAdd: () => this.setState({ cityPicker: c })
+    }));
+    const pickerCity = s.cityPicker;
+    const cityPickerOptions = (Component.CITIES[pickerCity] || []).map(name => {
+      const have = (cityMap[pickerCity] || []).includes(name);
+      return {
+        name, tag: have ? 'logged' : 'add', tagColor: have ? coral7 : ink40,
+        onPick: () => {
+          if (have) return this.setState({ cityPicker: '' });
+          this.setState(st => ({ addedCities: st.addedCities.concat([{ country: pickerCity, city: name }]), cityPicker: '' }), () => this.toast(name + ' added to your ' + pickerCity + ' list.'));
+        }
+      };
+    });
+
+    // feed = friends' posts + own public posts
+    const own = s.entries.filter(e => e.pub && !e.stub).map(e => ({
+      id: e.id, mine: true, who: 'You', initials: 'CD', nationality: this.natLabel(e), country: e.country,
+      place: e.placePub ? e.place : '', note: e.note, emoji: e.emoji, photo: e.photo,
+      when: e.when, ord: e.ord, kudos: e.kudos, iK: e.iK, comments: e.comments, date: e.date
+    }));
+    const merged = s.feed.concat(own).sort((x, y) => x.ord - y.ord);
+    const feed = merged.map(p => {
+      if (p.isRel) return {
+        isRel: true, isSolo: false, initials: p.initials, when: p.when, country: p.country,
+        color: this.color(p.initials), flag: this.flagOf(p.country), edge: '3px solid ' + coral,
+        relLead: (p.who === 'Colombe Duval' ? 'You' : p.who.split(' ')[0]) + ' stamped ' + p.country + ' on ',
+        relMapName: p.mapName, kudosPeople: [], onProfile: () => this.openPerson(p.who),
+        onOpen: () => {}, onMenu: () => {}, note: '', headline: '', passport: '', emoji: '', photo: false,
+        place: '', dateLabel: '', kudosLabel: '', commentCount: 0, who: p.who,
+        kudosBorder: stone, kudosBg: 'transparent', kudosColor: ink40
+      };
+      const mine = !!p.mine;
+      return {
+        isRel: false, isSolo: true, initials: p.initials, who: mine ? 'You' : p.who, when: p.when,
+        color: this.color(p.initials), edge: '0',
+        headline: 'stamped ' + this.flagOf(p.country) + ' ' + p.country,
+        passport: p.nationality, note: p.note, emoji: p.emoji, photo: p.photo, place: p.place,
+        dateLabel: p.date ? this.fmtDate(p.date) : '',
+        kudosPeople: this.avatars((p.kudos || []).slice(0, 3)),
+        kudosLabel: (p.kudos || []).length + ' stamps of approval',
+        commentCount: (p.comments || []).length,
+        kudosBorder: p.iK ? coral : stone, kudosBg: p.iK ? coral1 : 'transparent', kudosColor: p.iK ? coral7 : ink40,
+        onKudos: () => mine ? this.toggleMyKudos(p.id) : this.toggleFeedKudos(p.id),
+        onOpen: () => this.openDetail(mine ? 'mine' : 'feed', p.id),
+        onMenu: () => mine ? this.openMineMenu(s.entries.find(e => e.id === p.id)) : this.openFeedMenu(p),
+        onProfile: () => mine ? this.setState({ tab: 'profile' }) : this.openPerson(p.who),
+        relLead: '', relMapName: '', flag: this.flagOf(p.country), country: p.country
+      };
+    });
+
+    const history = s.entries.map(e => ({
+      flag: e.country ? this.flagOf(e.country) : this.natFlagOf(this.natsOf(e)[0]),
+      title: e.country || this.natLabel(e),
+      nationality: this.natLabel(e) || '\u2014',
+      sub: e.stub ? 'backfilled \u00B7 no details yet' : (e.city ? e.city + ' \u00B7 ' : '') + (e.pub ? 'on your feed' : 'private'),
+      emoji: e.emoji, note: e.note, private: !e.pub, isStub: !!e.stub, isFull: !e.stub,
+      meta: (e.date ? this.fmtDate(e.date) + '  \u00B7  ' : '') + (e.name || 'no name') + (e.position ? '  \u00B7  ' + e.position : '') + '  \u00B7  ' + e.kudos.length + ' stamps',
+      onMenu: () => this.openMineMenu(e),
+      onDetails: () => this.openAdd('', e.id),
+      onOpen: () => this.openDetail('mine', e.id)
+    }));
+
+    let detail = { comments: [], kudosPeople: [] };
+    if (s.detailOn) {
+      if (s.detailKind === 'feed') {
+        const p = s.feed.find(x => x.id === s.detailId) || { kudos: [], comments: [] };
+        detail = {
+          headerLabel: 'Post', initials: p.initials, who: p.who, color: this.color(p.initials),
+          headline: 'stamped ' + this.flagOf(p.country) + ' ' + p.country,
+          passport: p.nationality, emoji: p.emoji, note: p.note, photo: p.photo, when: p.when,
+          place: p.place, placeTag: p.place ? 'shared' : '', showPartner: false, partner: '',
+          kudosPeople: this.avatars(p.kudos), kudosLabel: p.kudos.length + ' stamps of approval',
+          kudosBorder: p.iK ? coral : stone, kudosBg: p.iK ? coral1 : 'transparent', kudosColor: p.iK ? coral7 : ink40,
+          onKudos: () => this.toggleFeedKudos(p.id),
+          comments: (p.comments || []).map(c => Object.assign({}, c, { color: this.color(c.initials) })),
+          commentHeader: (p.comments || []).length + ' comments',
+          visibilityNote: 'stamps and comments here are visible to ' + (p.who || '').split(' ')[0] + '\u2019s friends only.'
+        };
+      } else {
+        const e = s.entries.find(x => x.id === s.detailId) || { kudos: [], comments: [] };
+        detail = {
+          headerLabel: e.pub ? 'Your post' : 'Private entry', initials: 'CD', who: 'Colombe Duval', color: coral,
+          headline: 'stamped ' + this.flagOf(e.country) + ' ' + e.country + (e.city ? ' \u00B7 ' + e.city : ''),
+          passport: this.natLabel(e) || '\u2014', emoji: e.emoji, note: e.note, photo: e.photo,
+          when: e.date ? this.fmtDate(e.date) : e.when,
+          place: e.place, placeTag: e.place ? (e.placePub && e.pub ? 'shared' : 'private') : '',
+          showPartner: true, partner: e.name || 'no name on file',
+          kudosPeople: this.avatars(e.kudos), kudosLabel: e.kudos.length + ' stamps of approval',
+          kudosBorder: e.iK ? coral : stone, kudosBg: e.iK ? coral1 : 'transparent', kudosColor: e.iK ? coral7 : ink40,
+          onKudos: () => this.toggleMyKudos(e.id),
+          comments: (e.comments || []).map(c => Object.assign({}, c, { color: this.color(c.initials) })),
+          commentHeader: (e.comments || []).length + ' comments',
+          visibilityNote: e.pub ? 'your friends see the post, its stamps and its comments. the name stays with you.' : 'private. not on anyone\u2019s feed.'
+        };
+      }
+    }
+
+    const q = s.friendQuery.toLowerCase();
+    const source = s.friendsOf ? s.friends.filter(f => f.name !== s.friendsOf) : s.friends.filter(f => f.friend);
+    const friendList = source.filter(f => f.name.toLowerCase().includes(q)).map(f => ({
+      name: f.name, initials: f.initials, status: f.status, color: this.color(f.initials),
+      onOpen: () => this.openPerson(f.name)
+    }));
+
+    const person = s.person ? {
+      name: s.person.name, initials: s.person.initials, color: this.color(s.person.initials),
+      status: s.person.friend ? s.person.status : 'not a friend yet',
+      isFriend: !!s.person.friend, isStranger: !s.person.friend, friendCount: s.person.friends,
+      onFriends: () => this.setState({ friendsOf: s.person.name, overlay: 'friends', friendQuery: '' }),
+      posts: s.feed.filter(p => p.who === s.person.name && !p.isRel).map(p => ({
+        headline: 'stamped ' + p.country, flag: this.flagOf(p.country), emoji: p.emoji, note: p.note, when: p.when,
+        onOpen: () => this.openDetail('feed', p.id)
+      }))
+    } : { posts: [] };
+
+    const om = this.openMap();
+    const omCountries = [...new Set(om.entries.map(r => r.country))];
+
+    const emojiGroups = Component.EMOJI_GROUPS.map(g => ({
+      name: g.name,
+      items: Array.from(g.chars.match(/\p{Extended_Pictographic}\uFE0F?/gu) || []).map(ch => ({
+        char: ch, onPick: () => this.patchAdd({ emoji: ch }),
+        bg: a && a.emoji === ch ? coral1 : '#FFFDF9', border: a && a.emoji === ch ? coral : stone
+      }))
+    }));
+
+    // one picker, many jobs
+    const pk = s.picker;
+    const pq = s.pickerQuery.toLowerCase();
+    const closePicker = () => this.setState({ picker: null, pickerQuery: '' });
+    let pickerOptions = [], pickerTitle = '';
+    if (pk === 'position') {
+      pickerTitle = 'Position';
+      pickerOptions = [{ id: '', name: 'No position' }].concat(s.positions).filter(p => p.name.toLowerCase().includes(pq)).map(p => ({
+        label: p.name, flag: '',
+        tickColor: (a && a.position || '') === (p.id ? p.name : '') ? coral : 'transparent',
+        onPick: () => { this.patchAdd({ position: p.id ? p.name : '' }); closePicker(); }
+      }));
+    } else {
+      const natMode = pk === 'nat' || pk === 'signupNat' || pk === 'mapNat' || pk === 'mapNatAdd';
+      const multi = pk === 'nat' || pk === 'mapNat' || pk === 'mapNatAdd';
+      pickerTitle = natMode ? 'Passport' : 'Country';
+      const chosen = pk === 'country' ? (a && a.country) || ''
+        : pk === 'signupNat' ? s.pairDraft.nationality
+        : pk === 'signupCountry' ? s.pairDraft.country
+        : '';
+      pickerOptions = Component.PAIRS.filter(p => (natMode ? p[1] : p[0]).toLowerCase().includes(pq)).map(p => {
+        const label = natMode ? p[1] : p[0];
+        const staged = multi && s.pickerDraft.includes(label);
+        return {
+          label, flag: this.flagOf(p[0]),
+          tickColor: (staged || label === chosen) ? coral : 'transparent',
+          onPick: () => {
+            if (multi) return this.setState(st => ({
+              pickerDraft: st.pickerDraft.includes(label) ? st.pickerDraft.filter(x => x !== label) : st.pickerDraft.concat(label)
+            }));
+            if (pk === 'country') this.patchAdd({ country: label });
+            else if (pk === 'signupNat') this.patchPair({ nationality: label });
+            else if (pk === 'signupCountry') this.patchPair({ country: label });
+            closePicker();
+          }
+        };
+      });
+    }
+
+    // passport list drill-down
+    const withNat = s.entries.filter(e => this.natsOf(e).length);
+    let passportRows = [], passportTitle = 'Passport list';
+    if (!s.passNat) {
+      const groups = {};
+      withNat.forEach(e => this.natsOf(e).forEach(n => {
+        groups[n] = groups[n] || new Set();
+        if (e.country) groups[n].add(e.country);
+      }));
+      passportRows = Object.keys(groups).sort((x, y) => x.localeCompare(y)).map(n => ({
+        label: n, flag: this.natFlagOf(n), chevron: '1',
+        sub: groups[n].size === 1 ? '1 country' : groups[n].size + ' countries',
+        onOpen: () => this.setState({ passNat: n })
+      }));
+    } else if (!s.passCountry) {
+      passportTitle = s.passNat;
+      const cs = {};
+      withNat.filter(e => this.natsOf(e).includes(s.passNat) && e.country).forEach(e => { cs[e.country] = (cs[e.country] || 0) + 1; });
+      passportRows = Object.keys(cs).sort((x, y) => x.localeCompare(y)).map(c => ({
+        label: c, flag: this.flagOf(c), chevron: '1',
+        sub: cs[c] === 1 ? '1 stamp' : cs[c] + ' stamps',
+        onOpen: () => this.setState({ passCountry: c })
+      }));
+    } else {
+      passportTitle = s.passNat + ' \u00B7 ' + s.passCountry;
+      passportRows = withNat.filter(e => this.natsOf(e).includes(s.passNat) && e.country === s.passCountry).map(e => ({
+        label: e.date ? this.fmtDate(e.date) : (e.stub ? 'no date on file' : e.when),
+        flag: e.emoji || this.flagOf(e.country), chevron: '1',
+        sub: (e.name || 'no name') + (e.pub ? ' \u00B7 on your feed' : ' \u00B7 private'),
+        onOpen: () => this.openDetail('mine', e.id)
+      }));
+    }
+
+    const forMap = !!(a && a.mapId);
+    const draftNats = this.natsOf(a);
+    const blocked = a ? (forMap ? !a.country : !(a.country && draftNats.length)) : false;
+    const draftSummary = a
+      ? (forMap
+        ? this.flagOf(a.country) + ' ' + a.country + ' on ' + om.name + (a.pub ? ', announced to your friends.' : ', kept off your wall.')
+        : this.flagOf(a.country) + ' ' + a.country + ' \u00B7 ' + (draftNats.join(' \u00B7 ') || 'passport') + ' \u00B7 ' + this.fmtDate(a.date) + (a.name ? ' \u00B7 ' + a.name + ' (private)' : '') + '. ' + (a.pub ? (a.place ? (a.placePub ? 'Location shown.' : 'Location kept private.') : 'Going to your feed.') : 'Staying private.'))
+      : '';
+
+    // signup / map-import checklist
+    const g = s.signup;
+    const sq = s.signupQuery.toLowerCase();
+    let signupOptions = [];
+    if (g && g.mapId) {
+      signupOptions = Component.PAIRS.filter(p => p[0].toLowerCase().includes(sq)).map(p => {
+        const on = g.countries.includes(p[0]);
+        return {
+          label: p[0], flag: this.flagOf(p[0]), ticked: on,
+          bg: on ? coral1 : 'transparent', boxBorder: on ? coral : '#D6CFC6', boxBg: on ? coral : 'transparent',
+          onToggle: () => this.signupToggle('country', p[0]),
+          date: (g.dates || {})[p[0]] || '',
+          onDate: ev => this.setMapImportDate(p[0], ev.target.value)
+        };
+      });
+    }
+    const gCount = g ? (g.mapId ? g.countries.length : g.pairs.length) : 0;
+    const d = s.pairDraft;
+
+    // positions
+    const posQ = s.posQuery.toLowerCase();
+    const positions = s.positions.filter(p => p.name.toLowerCase().includes(posQ)).map(p => ({
+      name: p.name, rotA: p.rotA, shift: p.shift,
+      mark: p.done ? coral : '#D6CFC6',
+      bg: p.done ? coral1 : '#F1EAE0', border: p.done ? '#F8CFC1' : stone,
+      doneLabel: p.done ? 'done' : 'not yet', doneColor: p.done ? coral7 : ink40,
+      onOpen: () => this.openPos(p.id)
+    }));
+    const openPos = s.positions.find(p => p.id === s.posOpen);
+    const doneCount = s.positions.filter(p => p.done).length;
+    const paired = !!s.partner;
+
+    return {
+      isMap: s.tab === 'map', isFeed: s.tab === 'feed', isProfile: s.tab === 'profile',
+      isPositions: s.tab === 'positions' && pro,
+      cMap: s.tab === 'map' ? coral7 : ink40,
+      cFeed: s.tab === 'feed' ? coral7 : ink40,
+      cPositions: s.tab === 'positions' && pro ? coral7 : ink40,
+      cProfile: s.tab === 'profile' ? coral7 : ink40,
+      tabMap: () => this.setState({ tab: 'map', overlay: null }),
+      tabFeed: () => this.setState({ tab: 'feed', overlay: null }),
+      tabProfile: () => this.setState({ tab: 'profile', overlay: null }),
+      tabPositions: () => pro ? this.setState({ tab: 'positions', overlay: null }) : this.setState({ overlay: 'proWall' }),
+
+      trackTransform: 'translateX(calc(' + (s.side * -50) + '% + ' + s.dragX + 'px))',
+      beenLogged: been.join(','), natLogged: nats.join(','),
+      dotA: s.side === 0 ? ink : stone, dotB: s.side === 1 ? ink : stone,
+      goSideA: () => this.setState({ side: 0 }), goSideB: () => this.setState({ side: 1 }),
+      onDown: this.onDown, onMove: this.onMove, onUp: this.onUp,
+      statCount: active.length,
+      statCountLabel: s.side === 0 ? 'Countries stamped' : 'Passports collected',
+      statPct: this.pct(active.length),
+      statNote: s.side === 0
+        ? been.length + ' of 195 recognised countries. ' + (195 - been.length) + ' left to declare.'
+        : nats.length + ' of 195 passports. same denominator, different collection.',
+
+      continents,
+      continentSub: Object.keys(counts).length + ' of 6 continents touched',
+      azLabel: s.side === 0 ? 'Countries' : 'Passports',
+      azList,
+
+      cityLocked: !pro, cityUnlocked: pro, cityCountries,
+      showCityPicker: !!s.cityPicker, cityPickerTitle: 'Cities in ' + s.cityPicker,
+      cityPickerOptions, closeCityPicker: () => this.setState({ cityPicker: '' }),
+
+      feed, history,
+      entryCount: s.entries.length,
+      beenCount: been.length, natCount: nats.length, beenPct: this.pct(been.length),
+      friendCount: s.friends.filter(f => f.friend).length,
+      showHistory: s.overlay === 'history',
+      openHistory: () => this.setState({ overlay: 'history' }),
+
+      showDetail: s.detailOn, detail, closeDetail: () => this.setState({ detailOn: false }),
+      commentDraft: s.commentDraft,
+      onCommentInput: e => this.setState({ commentDraft: e.target.value }),
+      submitComment: this.submitComment,
+
+      showFriends: s.overlay === 'friends', friendList, friendQuery: s.friendQuery,
+      friendsTitle: s.friendsOf ? s.friendsOf.split(' ')[0] + '\u2019s friends' : 'Your friends',
+      onFriendQuery: e => this.setState({ friendQuery: e.target.value }),
+      openFriends: () => this.setState({ overlay: 'friends', friendsOf: '', friendQuery: '' }),
+
+      showPerson: s.overlay === 'person', person, addFriend: this.addFriend,
+      backFromPerson: () => this.setState({ overlay: s.personBack === 'friends' ? 'friends' : null }),
+
+      myMaps: s.maps.map(m => {
+        const cs = [...new Set(m.entries.map(r => r.country))];
+        return {
+          name: m.name, count: cs.length,
+          summary: cs.length + ' countries \u00B7 ' + this.pct(cs.length) + ' of the world',
+          onOpen: () => this.setState({ overlay: 'map2', openMapId: m.id })
+        };
+      }),
+      showMap2: s.overlay === 'map2',
+      openMapName: om.name,
+      openMapSub: 'yours to fill. countries here also colour your Been map \u2014 no other map.',
+      openMapNats: (om.nationalities || []).map(n => ({ label: n, flag: this.natFlagOf(n) })),
+      editMapNats: () => this.openMultiPicker('mapNatAdd'),
+      openMapMenu: () => this.setState({
+        sheet: {
+          title: om.name,
+          actions: [
+            { label: 'Rename this map', kind: 'mapRename' },
+            { label: 'Edit their passports', kind: 'mapNats' },
+            { label: 'Backfill countries', kind: 'mapBackfill' }
+          ]
+        }, sheetTarget: om.id
+      }),
+      openMapLogged: omCountries.join(','),
+      openMapCount: omCountries.length, openMapPct: this.pct(omCountries.length),
+      openMapList: om.entries.map(r => ({ country: r.country, flag: this.flagOf(r.country), emoji: r.emoji, when: r.when })),
+      openAddToMap: () => this.openAdd(om.id),
+      openMapImport: () => this.setState({ signup: { mapId: om.id, step: 1, countries: [], pairs: [], dates: {} }, signupQuery: '' }),
+      mapStatsNote: 'Stamps here count on your Been map, and their passports count on Been In. They never touch another map.',
+      renaming: s.renaming, mapDraft: s.mapDraft,
+      startRename: () => this.setState({ renaming: true, mapDraft: om.name }),
+      onMapDraft: e => this.setState({ mapDraft: e.target.value }),
+      saveRename: () => this.setState(st => ({
+        maps: st.maps.map(m => m.id !== om.id ? m : Object.assign({}, m, { name: st.mapDraft.trim() || m.name })), renaming: false
+      })),
+
+      showNewMap: s.overlay === 'newMap',
+      openNewMap: () => this.setState({ overlay: 'newMap', newMapName: '' }),
+      newMapName: s.newMapName,
+      onNewMapName: e => this.setState({ newMapName: e.target.value }),
+      nameSuggestions: ['Us, Abroad', 'Diplomatic Relations', 'The Grand Tour'].map(l => ({ label: l, onPick: () => this.setState({ newMapName: l }) })),
+      newMapNatChips: s.newMapNats.map(n => ({
+        label: n, flag: this.natFlagOf(n),
+        onRemove: () => this.setState(st => ({ newMapNats: st.newMapNats.filter(x => x !== n) }))
+      })),
+      mapNatAddLabel: s.newMapNats.length ? '+ Another' : '+ Passport',
+      openMapNatPicker: () => this.openMultiPicker('mapNat'),
+      createBlocked: !(s.newMapName.trim() && s.newMapNats.length),
+      createBg: s.newMapName.trim() && s.newMapNats.length ? coral : ink40,
+      createOpacity: s.newMapName.trim() && s.newMapNats.length ? '1' : '0.4',
+      createMap: () => {
+        const name = s.newMapName.trim();
+        if (!name || !s.newMapNats.length) return;
+        const id = 'm' + Date.now();
+        this.setState(st => ({
+          maps: st.maps.concat([{ id, name, nationalities: st.newMapNats.slice(), entries: [] }]),
+          overlay: null, openMapId: id, newMapName: '', newMapNats: [],
+          signup: { mapId: id, step: 1, countries: [], pairs: [], dates: {} }, signupQuery: ''
+        }));
+      },
+
+      // signup / backfill
+      showSignup: !!g,
+      signupChecklist: !!(g && g.mapId), signupBuilder: !!(g && !g.mapId),
+      signupStepLabel: g ? (g.mapId ? 'New map · backfill' : 'Sign up · backfill') : '',
+      signupTitle: g ? (g.mapId ? 'Already Been Places Together?' : 'Anything to Declare?') : '',
+      signupQuery: s.signupQuery,
+      onSignupQuery: e => this.setState({ signupQuery: e.target.value }),
+      signupOptions,
+      signupCountLabel: g && g.mapId
+        ? (gCount ? gCount + ' ticked' : 'nothing ticked yet')
+        : (gCount ? gCount + ' on the record' : 'nothing added yet'),
+      signupNextLabel: g ? (g.mapId ? 'Start the map' : 'Done') : '',
+      signupNext: this.signupNext,
+      signupSkip: () => g && g.mapId ? this.setState({ signup: null, overlay: 'map2' }) : this.setState({ signup: null, signupQuery: '' }),
+      openSignup: () => this.setState({ signup: { step: 1, countries: [], pairs: [] }, signupQuery: '', pairDraft: { country: '', nationality: '', date: '', name: '' } }),
+      pairCountryValue: d.country || 'Country',
+      pairCountryFlag: d.country ? this.flagOf(d.country) : '\u{1F30D}',
+      pairCountryColor: d.country ? ink : ink40,
+      pairNatValue: d.nationality || 'Passport',
+      pairNatFlag: d.nationality ? this.natFlagOf(d.nationality) : '\u{1F6C2}',
+      pairNatColor: d.nationality ? ink : ink40,
+      pairDate: d.date, onPairDate: e => this.patchPair({ date: e.target.value }),
+      pairName: d.name, onPairName: e => this.patchPair({ name: e.target.value }),
+      openSignupCountry: () => this.setState({ picker: 'signupCountry', pickerQuery: '' }),
+      openSignupNat: () => this.setState({ picker: 'signupNat', pickerQuery: '' }),
+      addPair: this.addPair,
+      pairBlocked: !(d.country && d.nationality),
+      pairBtnBg2: d.country && d.nationality ? coral : ink40,
+      pairOpacity: d.country && d.nationality ? '1' : '0.4',
+      pairsLabel: g && !g.mapId && g.pairs.length ? 'On the record' : 'Nothing yet',
+      signupPairs: g && !g.mapId ? g.pairs.map((p, i) => ({
+        flag: this.flagOf(p.country),
+        label: p.country + ' \u00B7 ' + p.nationality,
+        sub: [p.date ? this.fmtDate(p.date) : '', p.name].filter(Boolean).join(' \u00B7 ') || 'no details',
+        onRemove: () => this.removePair(i)
+      })) : [],
+
+      // passport list
+      passportSummary: passportRows.length && !s.passNat
+        ? passportRows.length + ' passports \u00B7 tap to browse'
+        : 'tap to browse by passport',
+      showPassport: s.overlay === 'passport',
+      openPassportList: () => this.setState({ overlay: 'passport', passNat: '', passCountry: '' }),
+      passportTitle, passportRows,
+      passportBack: () => s.passCountry
+        ? this.setState({ passCountry: '' })
+        : (s.passNat ? this.setState({ passNat: '' }) : this.setState({ overlay: null })),
+
+      // pro
+      notPro: !pro,
+      showProWall: s.overlay === 'proWall',
+      openProWall: () => this.setState({ overlay: 'proWall' }),
+      closeProWall: () => this.setState({ overlay: null }),
+      goPro: () => this.setState({ pro: true, overlay: null, tab: 'positions' }, () => this.toast('Pro unlocked. Positions and city stats are yours.')),
+      proPerks: [
+        { title: 'Positions', body: 'The full list, solo or paired. Mark them done, add notes, send a ping.' },
+        { title: 'By City', body: 'Break every country down to the cities you\u2019ve actually logged.' },
+        { title: 'One subscription', body: 'Both features, one price. Your maps stay private either way.' }
+      ],
+
+      // positions
+      posSub: paired ? 'paired with ' + s.partner.split(' ')[0] + ' \u00B7 either of you can log' : 'solo log \u00B7 private to you',
+      posQuery: s.posQuery,
+      onPosQuery: e => this.setState({ posQuery: e.target.value }),
+      positions,
+      posDoneLabel: doneCount + ' of ' + s.positions.length + ' done',
+      posFooter: paired
+        ? 'Shared with ' + s.partner + '. One partner at a time — accepting a new pairing ends this one.'
+        : 'Nothing here is shareable while you\u2019re solo. Pair up and the list becomes a shared record.',
+      paired, solo: !paired,
+      pairIncoming: !!s.pairIncoming, pairIncomingName: s.pairIncoming,
+      acceptPair: this.acceptPair,
+      declinePair: () => { this.setState({ pairIncoming: '' }); this.toast('declined. quietly.'); },
+      pairTitle: paired ? s.partner : (s.pairOut ? 'Invite pending' : 'No partner linked'),
+      pairInitials: paired ? this.state.friends.filter(f => f.name === s.partner).map(f => f.initials)[0] || 'AM' : '\u2014',
+      pairColor: paired ? this.color((this.state.friends.find(f => f.name === s.partner) || {}).initials) : '#D6CFC6',
+      pairHint: paired ? 'shared list \u00B7 pings on' : (s.pairOut ? 'waiting on ' + s.pairOut.split(' ')[0] : 'separate from friends and maps'),
+      pairBtnLabel: paired ? 'Unpair' : 'Pair',
+      pairBtnBg: paired ? '#F1EAE0' : coral,
+      pairBtnColor: paired ? ink : '#FFF8F2',
+      pairAction: () => paired
+        ? this.setState({ partner: '', pings: [] }, () => this.toast('unpaired. the list is yours alone again.'))
+        : this.setState({ overlay: 'friends', friendsOf: '', friendQuery: '' }, () => this.toast('pick a friend, then send them a pairing invite.')),
+      hasPings: s.pings.length > 0, pings: s.pings,
+
+      showPosDetail: !!openPos,
+      posDetail: openPos ? {
+        name: openPos.name, rotA: openPos.rotA, shift: openPos.shift,
+        status: (openPos.done ? 'marked done' : 'not yet') + ' \u00B7 ' + s.entries.filter(e => e.position === openPos.name).length + ' stamps tagged',
+        doneAction: openPos.done ? 'Unmark' : 'Mark as done',
+        doneBg: openPos.done ? '#F1EAE0' : coral,
+        doneColor: openPos.done ? ink : '#FFF8F2'
+      } : {},
+      posNote: s.posNote,
+      posNotePlaceholder: paired ? 'a note for the two of you' : 'a note for your eyes only',
+      onPosNote: e => this.setState({ posNote: e.target.value }),
+      closePosDetail: () => this.setState({ posOpen: '' }),
+      toggleDone: this.toggleDone, sendPing: this.sendPing,
+      pingLabel: paired ? 'Ping ' + s.partner.split(' ')[0] : 'Ping partner',
+
+      showSignIn: !s.signedIn,
+      signInGoogle: () => this.signIn('Google'),
+      signInApple: () => this.signIn('Apple'),
+      signInEmail: () => this.signIn('email'),
+
+      closeOverlay: this.closeOverlay,
+      showSheet: !!s.sheet,
+      sheet: s.sheet ? { title: s.sheet.title, actions: s.sheet.actions.map(x => ({ label: x.label, color: x.color || ink, onPick: () => this.pickSheet(x.kind) })) } : { actions: [] },
+      closeSheet: () => this.setState({ sheet: null }),
+      toast: s.toast,
+
+      // add flow
+      openAdd: () => this.openAdd('', ''),
+      showAdd: !!a,
+      addTitle: a && a.editId ? 'Add details' : (forMap ? 'Add to ' + om.name : 'New stamp'),
+      wantsPassport: !!a && !forMap,
+      step1Title: forMap ? 'Where Did You Two Get To?' : 'Where, and Whose Flag?',
+      step1Sub: forMap ? 'Your own maps track countries only. You name it, you fill it.' : 'Where it happened, when, and where they\u2019re from.',
+      draftNatChips: draftNats.map(n => ({
+        label: n, flag: this.natFlagOf(n),
+        onRemove: () => this.patchAdd({ nationality: draftNats.filter(x => x !== n) })
+      })),
+      draftNatAddLabel: draftNats.length ? '+ Another' : '+ Passport',
+      countryValue: a && a.country ? a.country : 'Pick a country',
+      countryFlag: a && a.country ? this.flagOf(a.country) : '\u{1F30D}',
+      countryColor: a && a.country ? ink : ink40,
+      openNatPicker: () => this.openMultiPicker('nat'),
+      openCountryPicker: () => this.setState({ picker: 'country', pickerQuery: '' }),
+      draftDate: a ? a.date : '', onDraftDate: e => this.patchAdd({ date: e.target.value }),
+      draftName: a ? a.name : '', draftNote: a ? a.note : '',
+      onDraftName: e => this.patchAdd({ name: e.target.value }),
+      onDraftNote: e => this.patchAdd({ note: e.target.value }),
+      draftPlace: a ? a.place : '', onDraftPlace: e => this.patchAdd({ place: e.target.value }),
+      placeSwitchOn: !!a && a.pub, placeSwitchOff: !!a && !a.pub,
+      togglePlacePub: () => this.patchAdd({ placePub: !(a && a.placePub) }),
+      placeHint: a && a.placePub ? 'Location shown to friends' : 'Location kept private',
+      placeBorder: a && a.placePub ? coral : stone,
+      placeCardBg: a && a.placePub ? coral1 : '#FFFDF9',
+      placeTrack: a && a.placePub ? coral : '#D6CFC6',
+      placeKnob: a && a.placePub ? '21px' : '3px',
+      emojiGroups,
+      wantsName: !!a && !forMap,
+      posTagValue: a && a.position ? a.position : 'No position tagged',
+      posTagColor: a && a.position ? ink : ink40,
+      openPosPicker: () => this.setState({ picker: 'position', pickerQuery: '' }),
+      togglePhoto: () => this.patchAdd({ photo: !(a && a.photo) }),
+      photoBg: a && a.photo ? 'repeating-linear-gradient(135deg,rgba(226,114,91,.12) 0 7px,transparent 7px 14px)' : 'none',
+      photoLabel: a && a.photo ? 'photo attached \u00B7 tap to remove' : 'tap to add a photo',
+      toggleShare: () => this.patchAdd({ pub: !(a && a.pub) }),
+      shareBorder: a && a.pub ? coral : stone,
+      shareCardBg: a && a.pub ? coral1 : '#FFFDF9',
+      shareTrack: a && a.pub ? coral : '#D6CFC6',
+      shareKnob: a && a.pub ? '23px' : '3px',
+      shareHint: a && a.pub ? 'friends will see it. never the name.' : 'private \u2014 map and history only.',
+      draftSummary,
+      addBack: this.addBack, addNext: this.addNext,
+      addBlocked: blocked,
+      nextBg: blocked ? ink40 : coral, nextOpacity: blocked ? '0.4' : '1',
+      addNextLabel: 'Log it',
+      pickerOpen: !!s.picker, pickerOptions, pickerQuery: s.pickerQuery, pickerTitle,
+      pickerMulti: s.picker === 'nat' || s.picker === 'mapNat' || s.picker === 'mapNatAdd',
+      pickerDraftLabel: s.pickerDraft.length ? s.pickerDraft.join(' \u00B7 ') : 'nothing selected',
+      savePicker: this.savePicker,
+      onPickerQuery: e => this.setState({ pickerQuery: e.target.value }),
+      closePicker: () => this.setState({ picker: null, pickerQuery: '', pickerDraft: [] })
+    };
+  }
+}
+</script>
+</body>
+</html>
