@@ -2,41 +2,15 @@ import type { ReactNode } from 'react';
 
 export function PhoneFrame({ children }: { children: ReactNode }) {
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'var(--cream)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 24,
-        padding: '36px 16px 56px',
-      }}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, textAlign: 'center' }}>
+    <div className="phone-frame-outer">
+      <div className="phone-frame-header">
         <div className="label">Been In</div>
         <div className="serif" style={{ fontSize: 26, lineHeight: 1.15, maxWidth: 340 }}>
           Ditch the red flags. Collect the world's.
         </div>
       </div>
 
-      <div
-        style={{
-          width: 390,
-          height: 844,
-          maxWidth: '100vw',
-          flex: 'none',
-          position: 'relative',
-          background: 'var(--cream-lighter)',
-          borderRadius: 44,
-          boxShadow: '0 2px 6px rgba(31,26,23,.08), 0 18px 40px rgba(31,26,23,.1)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
-      >
-        {children}
-      </div>
+      <div className="phone-frame-box">{children}</div>
     </div>
   );
 }
