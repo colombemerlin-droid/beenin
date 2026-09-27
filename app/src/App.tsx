@@ -1,5 +1,5 @@
 import { StoreProvider, useStore } from './state/store';
-import { PhoneFrame, StatusBar } from './ui/PhoneFrame';
+import { PhoneFrame, TopInset } from './ui/PhoneFrame';
 import { TabBar } from './components/TabBar';
 import { Toast } from './ui/Toast';
 import { Sheet } from './ui/Sheet';
@@ -26,7 +26,7 @@ function AppShell() {
   if (state.authLoading) {
     return (
       <PhoneFrame>
-        <StatusBar />
+        <TopInset />
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }} />
       </PhoneFrame>
     );
@@ -35,7 +35,7 @@ function AppShell() {
   if (!state.signedIn) {
     return (
       <PhoneFrame>
-        <StatusBar />
+        <TopInset />
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
           <SignInScreen />
         </div>
@@ -46,7 +46,7 @@ function AppShell() {
   if (state.onboardingStep === 'handle') {
     return (
       <PhoneFrame>
-        <StatusBar />
+        <TopInset />
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
           <ChooseHandleScreen />
         </div>
@@ -56,7 +56,7 @@ function AppShell() {
 
   return (
     <PhoneFrame>
-      <StatusBar />
+      <TopInset />
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
         {state.tab === 'map' && <MapScreen />}
         {state.tab === 'feed' && <FeedScreen />}

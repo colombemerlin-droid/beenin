@@ -90,6 +90,11 @@ button { -webkit-tap-highlight-color: transparent; }
   overflow: hidden;
 }
 
+.top-inset {
+  flex: none;
+  height: 20px;
+}
+
 /* Real phone viewport: drop the design-mockup chrome and go edge-to-edge,
    like an app actually installed on the device. */
 @media (max-width: 480px) {
@@ -108,5 +113,11 @@ button { -webkit-tap-highlight-color: transparent; }
     max-width: 100vw;
     border-radius: 0;
     box-shadow: none;
+  }
+
+  /* The device draws its own status bar; only keep clear of the notch when
+     the page runs full-screen (0 inside a normal browser tab). */
+  .top-inset {
+    height: env(safe-area-inset-top, 0px);
   }
 }
