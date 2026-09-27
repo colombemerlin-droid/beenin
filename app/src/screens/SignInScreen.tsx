@@ -1,11 +1,35 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import * as api from '../lib/api';
+
+// A sign-in link that failed (expired, already used) redirects back here with
+// the reason in the URL instead of a session. Read it once so it isn't silent.
+function linkError(): string {
+  const params = new URLSearchParams(window.location.hash.slice(1) || window.location.search);
+  const code = params.get('error_code');
+  if (!params.get('error') && !code) return '';
+  if (code === 'otp_expired') return 'that sign-in link has expired or was already used — send yourself a new one.';
+  return params.get('error_description')?.replace(/\+/g, ' ') || 'that sign-in link didn’t work — send yourself a new one.';
+}
+
+function sendError(err: unknown): string {
+  const status = (err as { status?: number })?.status;
+  const message = err instanceof Error ? err.message : '';
+  if (status === 429 || /rate limit/i.test(message)) {
+    return 'too many sign-in emails in the last hour — use the newest link you already got, or try again later.';
+  }
+  return message ? `couldn't send that link: ${message}` : "couldn't send that link — check the address and try again.";
+}
 
 export function SignInScreen() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(linkError);
+
+  // Drop the error from the address bar so a reload starts clean.
+  useEffect(() => {
+    if (window.location.hash || window.location.search) window.history.replaceState(null, '', window.location.pathname);
+  }, []);
 
   async function withGoogle() {
     setError('');
@@ -25,8 +49,8 @@ export function SignInScreen() {
     try {
       await api.signInWithEmailOtp(addr);
       setSent(true);
-    } catch {
-      setError("couldn't send that link — check the address and try again.");
+    } catch (err) {
+      setError(sendError(err));
     } finally {
       setBusy(false);
     }
