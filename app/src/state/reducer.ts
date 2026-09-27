@@ -254,7 +254,8 @@ export function reducer(state: AppState, action: AppAction): AppState {
     }
 
     case 'SET_TAB':
-      return { ...state, tab: action.tab, overlay: null };
+      // A tab switch leaves everything that was open on the old tab behind.
+      return { ...state, tab: action.tab, overlay: null, detailOn: false, openMapId: null, mapRenaming: false, sheet: null };
 
     case 'SET_SIDE':
       return { ...state, side: action.side };

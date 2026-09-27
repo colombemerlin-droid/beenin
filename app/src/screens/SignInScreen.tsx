@@ -74,7 +74,7 @@ export function SignInScreen() {
           Been In
         </div>
         <div className="serif" style={{ fontSize: 34, lineHeight: 1.1, marginTop: 10 }}>
-          Ditch the red flags. Collect the world's.
+          Ditch the red flags. Collect the world’s.
         </div>
         <div style={{ font: '400 14px/1.55 Inter, sans-serif', color: 'var(--ink-body)', marginTop: 12 }}>
           Two maps, one passport, nobody watching but you.

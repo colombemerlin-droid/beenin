@@ -115,9 +115,23 @@ button { -webkit-tap-highlight-color: transparent; }
     box-shadow: none;
   }
 
-  /* The device draws its own status bar; only keep clear of the notch when
-     the page runs full-screen (0 inside a normal browser tab). */
+  /* The device draws its own status bar: keep clear of the notch when the
+     page runs full-screen, with a small minimum gap inside a browser tab. */
   .top-inset {
-    height: env(safe-area-inset-top, 0px);
+    height: max(env(safe-area-inset-top, 0px), 12px);
+  }
+
+  /* iOS Safari zooms the page into any field with text under 16px and
+     doesn't zoom back out — keep every field at 16px on phones. */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* Bottom bars sit right above the home indicator in full-screen mode and
+     right above the browser toolbar in a tab — no fixed 34px gap. */
+  .bottom-safe {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px) !important;
   }
 }

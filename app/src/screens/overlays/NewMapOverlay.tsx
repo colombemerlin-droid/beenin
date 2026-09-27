@@ -42,7 +42,7 @@ export function NewMapOverlay() {
         </div>
       </div>
 
-      <div style={{ flex: 'none', padding: '14px 20px 34px', borderTop: '1px solid var(--stone)' }}>
+      <div className="bottom-safe" style={{ flex: 'none', padding: '14px 20px 34px', borderTop: '1px solid var(--stone)' }}>
         <button
           onClick={() => dispatch({ type: 'START_MAP_BACKFILL' })}
           disabled={!canContinue}

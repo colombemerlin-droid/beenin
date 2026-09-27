@@ -1,7 +1,7 @@
 import { useStore } from '../../state/store';
 import { useEntryActions } from '../../state/useEntryActions';
 import { flagOf } from '../../data/countries';
-import { fmtDate } from '../../data/format';
+import { fmtDate, kudosLabel, plural } from '../../data/format';
 import { ME_KEY } from '../../lib/identity';
 import { natLabel } from '../../state/selectors';
 import { OverlayHeader } from '../../ui/OverlayHeader';
@@ -28,7 +28,7 @@ export function PostDetailOverlay() {
           {p.nationality && <PassportLine label={p.nationality} />}
           {p.companionName && <InfoLine label="With" value={p.companionName} />}
           <MetLine num={p.metDateNumber} where={p.metDateLocation} />
-          {p.place && <PlaceLine place={p.place} tag="shared" />}
+          {p.place && <PlaceLine place={p.place} />}
           {p.note && <NoteLine note={p.note} />}
           {p.photoPath && <PhotoBlock path={p.photoPath} />}
           <div style={{ font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 12 }}>{p.date ? fmtDate(p.date) : p.when}</div>
@@ -129,7 +129,7 @@ function PassportLine({ label }: { label: string }) {
   );
 }
 
-function PlaceLine({ place, tag }: { place: string; tag: string }) {
+function PlaceLine({ place, tag }: { place: string; tag?: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, color: 'var(--ink-body)' }}>
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -137,7 +137,7 @@ function PlaceLine({ place, tag }: { place: string; tag: string }) {
         <circle cx="12" cy="10" r="2.4" />
       </svg>
       <span style={{ font: '400 14px/1.45 Inter, sans-serif' }}>{place}</span>
-      <span style={{ font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)' }}>{tag}</span>
+      {tag && <span style={{ font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)' }}>{tag}</span>}
     </div>
   );
 }
@@ -200,7 +200,7 @@ function KudosRow({ iK, kudos, onToggle }: { iK: boolean; kudos: string[]; onTog
           <Avatar key={i} token={k} size={28} style={{ marginRight: -8, border: '1.5px solid var(--cream-lighter)' }} />
         ))}
       </div>
-      <span style={{ font: '400 13px/1.45 Inter, sans-serif', color: 'var(--ink-body)', marginLeft: 12 }}>{kudos.length} stamps of approval</span>
+      <span style={{ font: '400 13px/1.45 Inter, sans-serif', color: 'var(--ink-body)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, marginLeft: 12 }}>{kudosLabel(kudos.length)}</span>
     </div>
   );
 }
@@ -221,7 +221,7 @@ function CommentsBlock({
   return (
     <>
       <div className="label" style={{ margin: '20px 0 14px' }}>
-        {comments.length} comments
+        {comments.length ? plural(comments.length, 'comment', 'comments') : 'no comments yet'}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {comments.map((c, i) => (

@@ -78,7 +78,8 @@ function AppShell() {
         <Sheet />
         <Toast />
       </div>
-      <TabBar />
+      {/* Writing a story and backfilling are full-screen flows with their own footer. */}
+      {!state.story && !state.signup && <TabBar />}
     </PhoneFrame>
   );
 }

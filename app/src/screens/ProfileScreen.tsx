@@ -5,6 +5,7 @@ import { beenCountries, natCountries } from '../state/selectors';
 import { initialsOf } from '../lib/identity';
 import { ChevronRightIcon, TabProfileIcon } from '../ui/icons';
 import * as api from '../lib/api';
+import { ShareHandle } from '../ui/ShareHandle';
 
 export function ProfileScreen() {
   const { state, dispatch } = useStore();
@@ -63,11 +64,16 @@ export function ProfileScreen() {
               </button>
             </div>
           ) : (
-            <button onClick={startEdit} style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', textAlign: 'left' }}>
-              <div className="serif" style={{ fontSize: 26, lineHeight: 1.1, color: state.profile.name ? 'var(--ink)' : 'var(--ink-40)' }}>
-                {state.profile.name || 'Add your name'}
+            <>
+              <button onClick={startEdit} style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', textAlign: 'left' }}>
+                <div className="serif" style={{ fontSize: 26, lineHeight: 1.1, color: state.profile.name ? 'var(--ink)' : 'var(--ink-40)' }}>
+                  {state.profile.name || 'Add your name'}
+                </div>
+              </button>
+              <div style={{ marginTop: 4 }}>
+                <ShareHandle compact />
               </div>
-            </button>
+            </>
           )}
         </div>
       </div>

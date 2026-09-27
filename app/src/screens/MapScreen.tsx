@@ -99,7 +99,9 @@ export function MapScreen() {
           background: 'var(--paper)',
           border: '1px solid var(--stone)',
           overflow: 'hidden',
-          height: 322,
+          // Sized by width: the world map is ~2:1, so a fixed height left big
+          // empty bands above and below it on phone-width screens.
+          aspectRatio: '1.55 / 1',
           touchAction: 'pan-y',
           boxShadow: '0 1px 2px rgba(31,26,23,.04), 0 4px 14px rgba(31,26,23,.06)',
         }}

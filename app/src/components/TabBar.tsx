@@ -12,8 +12,8 @@ export function TabBar() {
 
   return (
     <div
+      className="tab-bar bottom-safe"
       style={{
-        height: 98,
         flex: 'none',
         display: 'flex',
         alignItems: 'flex-start',

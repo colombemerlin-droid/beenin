@@ -108,7 +108,7 @@ export function Picker() {
         ))}
       </div>
       {isMulti && (
-        <div style={{ flex: 'none', padding: '12px 20px 34px', borderTop: '1px solid var(--stone)', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="bottom-safe" style={{ flex: 'none', padding: '12px 20px 34px', borderTop: '1px solid var(--stone)', display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ flex: 1, font: '400 13px/1.45 Inter, sans-serif', color: 'var(--ink-40)' }}>
             {state.pickerDraft.length ? state.pickerDraft.join(' · ') : 'nothing selected'}
           </span>

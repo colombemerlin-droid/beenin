@@ -1,6 +1,6 @@
 import { useStore } from '../../state/store';
 import { flagOf, natFlagOf } from '../../data/countries';
-import { fmtDate } from '../../data/format';
+import { fmtDate, kudosLabel } from '../../data/format';
 import { natLabel } from '../../state/selectors';
 import { OverlayHeader } from '../../ui/OverlayHeader';
 import { EmptyState } from '../../ui/EmptyState';
@@ -31,10 +31,11 @@ export function HistoryOverlay() {
         {state.entries.map((e) => {
           const companion = e.companionId ? state.companions.find((c) => c.id === e.companionId) : undefined;
           const personName = companion?.name || e.name;
-          const flag = e.country ? flagOf(e.country) : natFlagOf(e.nationality[0] || '');
+          // A story with no country or passport has no flag to show.
+          const flag = e.country ? flagOf(e.country) : e.nationality[0] ? natFlagOf(e.nationality[0]) : '📝';
           const title = e.country || natLabel(e) || personName || 'Story';
           const sub = e.stub ? 'backfilled · no details yet' : `${e.city ? e.city + ' · ' : ''}${e.pub ? 'on your feed' : 'private'}`;
-          const meta = `${e.date ? fmtDate(e.date) + '  ·  ' : ''}${personName || 'no name'}  ·  ${e.kudos.length} stamps`;
+          const meta = [e.date && fmtDate(e.date), personName, e.kudos.length > 0 && kudosLabel(e.kudos.length)].filter(Boolean).join('  ·  ');
           return (
             <div key={e.id} style={{ position: 'relative', background: 'var(--cream)', borderRadius: 14, padding: '12px 16px 14px', boxShadow: '0 1px 2px rgba(31,26,23,.04), 0 4px 14px rgba(31,26,23,.06)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -69,12 +70,14 @@ export function HistoryOverlay() {
                   onClick={() => dispatch({ type: 'OPEN_DETAIL', kind: 'mine', id: e.id })}
                   style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 0, padding: 0, marginTop: 10, cursor: 'pointer', color: 'var(--ink)' }}
                 >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className="label">Passport</span>
-                    <span style={{ font: '500 14px/1.3 Inter, sans-serif' }}>{natLabel(e)}</span>
-                    <span style={{ flex: 1 }} />
-                    {e.emoji && <span style={{ fontSize: 17, lineHeight: 1 }}>{e.emoji}</span>}
-                  </span>
+                  {(natLabel(e) || e.emoji) && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {natLabel(e) && <span className="label">Passport</span>}
+                      <span style={{ font: '500 14px/1.3 Inter, sans-serif' }}>{natLabel(e)}</span>
+                      <span style={{ flex: 1 }} />
+                      {e.emoji && <span style={{ fontSize: 17, lineHeight: 1 }}>{e.emoji}</span>}
+                    </span>
+                  )}
                   {e.note && <span style={{ display: 'block', fontFamily: 'Fraunces, Georgia, serif', fontWeight: 400, fontSize: 16, lineHeight: 1.4, marginTop: 8 }}>“{e.note}”</span>}
                   <span style={{ display: 'block', font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 8 }}>{meta}</span>
                 </button>

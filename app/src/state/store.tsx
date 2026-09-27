@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useReducer, useRef, 
 import { reducer, initialState } from './reducer';
 import { supabase } from '../lib/supabase';
 import * as api from '../lib/api';
+import { demoAccount, demoData, demoStep } from '../dev/demo';
 import type { AppAction, AppState } from './types';
 
 interface StoreContextValue {
@@ -61,6 +62,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // in-progress state like onboarding.
   useEffect(() => {
     let cancelled = false;
+
+    // Dev-only demo account (see src/dev/demo.ts) — no auth, no server.
+    const demo = import.meta.env.DEV ? demoStep() : null;
+    if (import.meta.env.DEV && demo) {
+      dispatch({
+        type: 'HYDRATE_SESSION',
+        userId: demoAccount.userId,
+        displayName: demoAccount.displayName,
+        handle: demoAccount.handle,
+        handleSet: demo !== 'handle',
+        onboarded: demo === 'done',
+        ...demoData(),
+      });
+      return;
+    }
 
     async function hydrateFromSession(userId: string) {
       if (hydratedFor.current === userId) return;
@@ -136,7 +152,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(() => {
     const userId = hydratedFor.current;
     const before = api.writeState();
-    if (!userId || !before.idle) return;
+    if (!userId || !before.idle || (import.meta.env.DEV && demoStep())) return;
     api
       .loadAccount(userId, nameRef.current)
       .then((data) => {

@@ -7,6 +7,15 @@ export function fmtDate(iso: string): string {
   return `${Number(parts[2])} ${MONTHS[Number(parts[1]) - 1]} ${parts[0]}`;
 }
 
+// "1 comment" / "3 comments".
+export function plural(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+export function kudosLabel(n: number): string {
+  return n ? plural(n, 'stamp of approval', 'stamps of approval') : 'no stamps yet';
+}
+
 export function today(): string {
   return new Date().toISOString().slice(0, 10);
 }

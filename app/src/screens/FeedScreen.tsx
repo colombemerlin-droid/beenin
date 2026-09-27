@@ -1,7 +1,7 @@
 import { useStore } from '../state/store';
 import { useEntryActions } from '../state/useEntryActions';
 import { flagOf } from '../data/countries';
-import { fmtDate } from '../data/format';
+import { fmtDate, kudosLabel } from '../data/format';
 import { ME_KEY } from '../lib/identity';
 import { natLabel } from '../state/selectors';
 import { DotsIcon, ThumbsUpIcon, CommentIcon } from '../ui/icons';
@@ -240,7 +240,7 @@ export function FeedScreen() {
                   <Avatar key={i} token={k} size={24} style={{ marginRight: -7, border: '1.5px solid var(--cream)' }} />
                 ))}
               </div>
-              <span style={{ font: '400 13px/1.45 Inter, sans-serif', color: 'var(--ink-body)', marginLeft: 10 }}>{p.kudos.length} stamps of approval</span>
+              <span style={{ font: '400 13px/1.45 Inter, sans-serif', color: 'var(--ink-body)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, marginLeft: 10 }}>{kudosLabel(p.kudos.length)}</span>
               <span style={{ flex: 1 }} />
               <button
                 onClick={() => dispatch({ type: 'OPEN_DETAIL', kind: p.mine ? 'mine' : 'feed', id: p.id })}

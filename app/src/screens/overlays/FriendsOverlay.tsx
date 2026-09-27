@@ -5,6 +5,7 @@ import { OverlayHeader } from '../../ui/OverlayHeader';
 import { Avatar } from '../../ui/Avatar';
 import { EmptyState } from '../../ui/EmptyState';
 import { ChevronRightIcon } from '../../ui/icons';
+import { ShareHandle } from '../../ui/ShareHandle';
 import type { Friend } from '../../types';
 
 export function FriendsOverlay() {
@@ -49,6 +50,10 @@ export function FriendsOverlay() {
     <div className="noscroll" style={{ position: 'absolute', inset: 0, background: 'var(--cream-lighter)', zIndex: 40, overflowY: 'auto' }}>
       <OverlayHeader title="Your friends" onBack={() => dispatch({ type: 'CLOSE_OVERLAY' })} />
       <div style={{ padding: '14px 20px 120px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 18 }}>
+          <span style={{ font: '400 13px/1.45 Inter, sans-serif', color: 'var(--ink-body)' }}>Your handle — send it so friends can add you</span>
+          <ShareHandle />
+        </div>
         <div className="label" style={{ marginBottom: 8 }}>
           Add a friend
         </div>

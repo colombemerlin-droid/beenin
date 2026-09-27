@@ -277,7 +277,7 @@ export function AddStoryScreen() {
         </button>
       </div>
 
-      <div style={{ flex: 'none', padding: '14px 20px 34px', borderTop: '1px solid var(--stone)', display: 'flex', gap: 10 }}>
+      <div className="bottom-safe" style={{ flex: 'none', padding: '14px 20px 34px', borderTop: '1px solid var(--stone)', display: 'flex', gap: 10 }}>
         <button
           onClick={publish}
           disabled={!canPublish}

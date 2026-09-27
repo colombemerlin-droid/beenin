@@ -49,9 +49,14 @@ export function SignupScreen() {
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 26, background: 'var(--cream-lighter)', display: 'flex', flexDirection: 'column' }}>
       <div style={{ flex: 'none', padding: '18px 20px 10px' }}>
-        <div className="label">{mapScoped ? `Backfill · ${mapName || 'map'}` : 'Sign up · backfill'}</div>
+        <div className="label">{mapScoped ? `Backfill · ${mapName || 'map'}` : state.onboardingStep === 'signup' ? 'Sign up · backfill' : 'Backfill'}</div>
         <div className="serif" style={{ fontSize: 26, lineHeight: 1.15, marginTop: 6 }}>
           Anything to Declare?
+        </div>
+        <div style={{ font: '400 13px/1.5 Inter, sans-serif', color: 'var(--ink-body)', marginTop: 6 }}>
+          {mapScoped
+            ? 'Countries you’ve already been to together.'
+            : 'Log where you’ve already been, and whose passport. Nothing here is shared — skip it and come back anytime from Profile.'}
         </div>
       </div>
 
@@ -200,7 +205,7 @@ export function SignupScreen() {
         ))}
       </div>
 
-      <div style={{ flex: 'none', padding: '12px 20px 34px', borderTop: '1px solid var(--stone)', display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div className="bottom-safe" style={{ flex: 'none', padding: '12px 20px 34px', borderTop: '1px solid var(--stone)', display: 'flex', alignItems: 'center', gap: 10 }}>
         <button onClick={skip} style={{ padding: '14px 16px', borderRadius: 8, border: 0, background: 'transparent', color: 'var(--ink-body)', font: '500 14px/1 Inter, sans-serif', cursor: 'pointer' }}>
           Skip
         </button>
