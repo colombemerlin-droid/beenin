@@ -46,36 +46,65 @@ export function PostDetailOverlay() {
 
   const e = state.entries.find((x) => x.id === state.detailId);
   if (!e) return null;
+  const companion = e.companionId ? state.companions.find((c) => c.id === e.companionId) : undefined;
+  const personName = companion?.name || e.name;
+  const nameHidden = !e.pub || !!e.hideName;
+  const headline = e.country ? `stamped ${flagOf(e.country)} ${e.country}${e.city ? ' · ' + e.city : ''}` : 'shared a story';
   return (
     <div className="noscroll" style={{ position: 'absolute', inset: 0, background: 'var(--cream-lighter)', zIndex: 45, overflowY: 'auto' }}>
       <OverlayHeader title={e.pub ? 'Your post' : 'Private entry'} onBack={close} />
       <div style={{ padding: '18px 20px 120px' }}>
-        <Header token={ME_KEY} who={state.profile.name.trim() || 'You'} headline={`stamped ${flagOf(e.country)} ${e.country}${e.city ? ' · ' + e.city : ''}`} emoji={e.emoji} />
-        <PassportLine label={natLabel(e) || '—'} />
+        <Header token={ME_KEY} who={state.profile.name.trim() || 'You'} headline={headline} emoji={e.emoji} />
+        {e.nationality.length > 0 && <PassportLine label={natLabel(e)} />}
+        {(e.metDateNumber || e.metDateLocation) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, color: 'var(--ink-body)' }}>
+            <span className="label">We met</span>
+            <span style={{ font: '400 14px/1.45 Inter, sans-serif' }}>
+              {[e.metDateNumber ? `date #${e.metDateNumber}` : '', e.metDateLocation].filter(Boolean).join(' · ')}
+            </span>
+          </div>
+        )}
         {e.place && <PlaceLine place={e.place} tag={e.placePub && e.pub ? 'shared' : 'private'} />}
         {e.note && <NoteLine note={e.note} />}
         {e.photo && <PhotoBlock />}
-        <div
-          style={{
-            marginTop: 14,
-            borderRadius: 14,
-            border: '1px dashed var(--stone-dashed)',
-            padding: '12px 14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-          }}
-        >
-          <span style={{ color: 'var(--coral-dark)', display: 'flex' }}>
-            <LockIcon size={16} />
-          </span>
-          <span style={{ font: '400 13px/1.45 Inter, sans-serif', color: 'var(--ink-body)' }}>for your eyes only — {e.name || 'no name on file'}</span>
-        </div>
+        {nameHidden ? (
+          <div
+            style={{
+              marginTop: 14,
+              borderRadius: 14,
+              border: '1px dashed var(--stone-dashed)',
+              padding: '12px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            <span style={{ color: 'var(--coral-dark)', display: 'flex' }}>
+              <LockIcon size={16} />
+            </span>
+            <span style={{ font: '400 13px/1.45 Inter, sans-serif', color: 'var(--ink-body)' }}>
+              {e.pub ? `hidden from friends — ${personName || 'no name on file'}` : `for your eyes only — ${personName || 'no name on file'}`}
+            </span>
+          </div>
+        ) : (
+          personName && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, color: 'var(--ink-body)' }}>
+              <span className="label">With</span>
+              <span style={{ font: '500 14px/1.3 Inter, sans-serif' }}>{personName}</span>
+            </div>
+          )
+        )}
         <div style={{ font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 12 }}>{e.date ? fmtDate(e.date) : e.when}</div>
         <KudosRow iK={e.iK} kudos={e.kudos} onToggle={() => dispatch({ type: 'TOGGLE_KUDOS', kind: 'mine', id: e.id })} />
         <CommentsBlock
           comments={e.comments}
-          note={e.pub ? 'your friends see the post, its stamps and its comments. the name stays with you.' : 'private. not on anyone’s feed.'}
+          note={
+            e.pub
+              ? e.hideName
+                ? 'your friends see the post, its stamps and its comments. the name stays with you.'
+                : "your friends see the post, its stamps, its comments — and who it's about."
+              : 'private. not on anyone’s feed.'
+          }
           commentDraft={state.commentDraft}
           onDraft={(t) => dispatch({ type: 'SET_COMMENT_DRAFT', text: t })}
           onSubmit={() => dispatch({ type: 'SUBMIT_COMMENT' })}

@@ -20,19 +20,21 @@ export function HistoryOverlay() {
             body="Everything you log — public or private — will show up here, oldest paperwork and all."
             action={
               <button
-                onClick={() => dispatch({ type: 'OPEN_ADD' })}
+                onClick={() => dispatch({ type: 'OPEN_STORY' })}
                 style={{ marginTop: 6, padding: '10px 18px', borderRadius: 8, border: 0, background: 'var(--coral)', color: '#FFF8F2', font: '600 14px/1 Inter, sans-serif', cursor: 'pointer' }}
               >
-                Log your first stamp
+                Add your first story
               </button>
             }
           />
         )}
         {state.entries.map((e) => {
+          const companion = e.companionId ? state.companions.find((c) => c.id === e.companionId) : undefined;
+          const personName = companion?.name || e.name;
           const flag = e.country ? flagOf(e.country) : natFlagOf(e.nationality[0] || '');
-          const title = e.country || natLabel(e);
+          const title = e.country || natLabel(e) || personName || 'Story';
           const sub = e.stub ? 'backfilled · no details yet' : `${e.city ? e.city + ' · ' : ''}${e.pub ? 'on your feed' : 'private'}`;
-          const meta = `${e.date ? fmtDate(e.date) + '  ·  ' : ''}${e.name || 'no name'}  ·  ${e.kudos.length} stamps`;
+          const meta = `${e.date ? fmtDate(e.date) + '  ·  ' : ''}${personName || 'no name'}  ·  ${e.kudos.length} stamps`;
           return (
             <div key={e.id} style={{ position: 'relative', background: 'var(--cream)', borderRadius: 14, padding: '12px 16px 14px', boxShadow: '0 1px 2px rgba(31,26,23,.04), 0 4px 14px rgba(31,26,23,.06)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -57,7 +59,7 @@ export function HistoryOverlay() {
               </div>
               {e.stub ? (
                 <button
-                  onClick={() => dispatch({ type: 'OPEN_ADD', editId: e.id })}
+                  onClick={() => dispatch({ type: 'OPEN_STORY', editId: e.id })}
                   style={{ width: '100%', marginTop: 10, padding: 10, borderRadius: 8, border: '1px dashed var(--stone-dashed)', background: 'transparent', cursor: 'pointer', color: 'var(--ink-body)', font: '500 13px/1 Inter, sans-serif' }}
                 >
                   Add details — optional

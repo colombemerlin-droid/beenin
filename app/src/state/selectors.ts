@@ -1,16 +1,23 @@
 import { byCountry, natToCountry, CONTINENTS, pct, type ContinentCode } from '../data/countries';
+import { ME_KEY } from '../lib/identity';
 import type { AppState } from './types';
-import type { Entry } from '../types';
+import type { Entry, NotificationItem } from '../types';
 
 export function beenCountries(state: AppState): string[] {
   const set = new Set<string>();
   state.entries.forEach((e) => e.country && set.add(e.country));
+  // A country logged on any group map also colors the general "Been" map (unconditional propagation).
+  state.maps.forEach((m) => m.entries.forEach((e) => e.country && set.add(e.country)));
   return [...set];
 }
 
 export function natsLogged(state: AppState): string[] {
   const set = new Set<string>();
   state.entries.forEach((e) => e.nationality.forEach((n) => n && set.add(n)));
+  // A group map's nationalities propagate to "Been In" once that map has at least one entry.
+  state.maps.forEach((m) => {
+    if (m.entries.length) m.nationalities.forEach((n) => n && set.add(n));
+  });
   return [...set];
 }
 
@@ -67,12 +74,67 @@ export function touchedContinents(activeCountries: string[]): number {
   return set.size;
 }
 
+export interface ContinentGroup {
+  continent: string;
+  countries: string[];
+}
+
+// Groups a list of country names by continent (continents ordered by display name,
+// countries alphabetical within each). Unrecognized entries (e.g. "Unknown") are
+// left out — callers append them as a trailing group if they want them shown.
+export function continentGroups(countries: string[]): ContinentGroup[] {
+  const byContinent: Partial<Record<ContinentCode, string[]>> = {};
+  countries.forEach((c) => {
+    const p = byCountry(c);
+    if (!p) return;
+    (byContinent[p.continent] ||= []).push(c);
+  });
+  return (Object.keys(CONTINENTS) as ContinentCode[])
+    .filter((k) => byContinent[k] && byContinent[k]!.length)
+    .map((k) => ({ continent: CONTINENTS[k].name, countries: byContinent[k]!.slice().sort((a, b) => a.localeCompare(b)) }))
+    .sort((a, b) => a.continent.localeCompare(b.continent));
+}
+
 export function entryNats(e: Entry): string[] {
   return e.nationality.filter(Boolean);
 }
 
 export function natLabel(e: Entry): string {
   return entryNats(e).join(' · ');
+}
+
+const MAX_NOTIFICATIONS = 20;
+
+// Kudos/comments have no real timestamp in this app's data model (everything is
+// relative-label strings, e.g. "just now"), so recency is derived from each entry's
+// existing `ord` (lower = more recent, the same convention the feed already sorts by),
+// and "aging out" is a length cap rather than a real time window.
+export function notificationFeed(state: AppState): NotificationItem[] {
+  const items: NotificationItem[] = [];
+  const now = new Date();
+
+  state.entries.forEach((e) => {
+    e.kudos.forEach((initials, i) => {
+      if (initials === ME_KEY) return;
+      items.push({ kind: 'kudos', id: `k-${e.id}-${i}`, entryId: e.id, who: initials, initials, country: e.country, ord: e.ord });
+    });
+    e.comments.forEach((c, i) => {
+      if (c.initials === ME_KEY) return;
+      items.push({ kind: 'comment', id: `c-${e.id}-${i}`, entryId: e.id, who: c.who, initials: c.initials, country: e.country, text: c.text, ord: e.ord });
+    });
+    if (e.date) {
+      const d = new Date(e.date);
+      if (!Number.isNaN(d.getTime()) && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()) {
+        const years = now.getFullYear() - d.getFullYear();
+        if (years > 0) {
+          items.push({ kind: 'memory', id: `m-${e.id}`, entryId: e.id, years, country: e.country, emoji: e.emoji, ord: e.ord });
+        }
+      }
+    }
+  });
+
+  items.sort((a, b) => a.ord - b.ord);
+  return items.slice(0, MAX_NOTIFICATIONS);
 }
 
 export { pct };

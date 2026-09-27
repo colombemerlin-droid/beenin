@@ -11,7 +11,7 @@ export function ProfileScreen() {
   const [draft, setDraft] = useState(state.profile.name);
   const been = beenCountries(state);
   const nats = natCountries(state);
-  const friendCount = state.friends.filter((f) => f.friend).length;
+  const friendCount = state.friends.filter((f) => f.requestState === 'accepted').length;
   const initials = initialsOf(state.profile.name);
   const hasLogged = been.length > 0 || nats.length > 0;
 

@@ -11,7 +11,7 @@ const StoreContext = createContext<StoreContextValue | null>(null);
 
 const STORAGE_KEY = 'been-in:v1';
 
-type PersistedState = Pick<AppState, 'signedIn' | 'profile' | 'entries' | 'friendPosts' | 'friends'>;
+type PersistedState = Pick<AppState, 'signedIn' | 'profile' | 'entries' | 'friendPosts' | 'friends' | 'maps' | 'companions'>;
 
 function loadPersisted(): Partial<PersistedState> {
   try {
@@ -32,6 +32,8 @@ function savePersisted(state: AppState) {
     entries: state.entries,
     friendPosts: state.friendPosts,
     friends: state.friends,
+    maps: state.maps,
+    companions: state.companions,
   };
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(subset));
@@ -56,7 +58,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     savePersisted(state);
-  }, [state.signedIn, state.profile, state.entries, state.friendPosts, state.friends]);
+  }, [state.signedIn, state.profile, state.entries, state.friendPosts, state.friends, state.maps, state.companions]);
 
   return <StoreContext.Provider value={{ state, dispatch }}>{children}</StoreContext.Provider>;
 }

@@ -12,14 +12,14 @@ export function FriendsOverlay() {
 
   const isMine = !state.friendsOf;
   const q = state.friendQuery.toLowerCase();
-  const source = isMine ? state.friends.filter((f) => f.friend) : state.friends.filter((f) => f.name !== state.friendsOf);
+  const source = isMine ? state.friends.filter((f) => f.requestState === 'accepted') : state.friends.filter((f) => f.name !== state.friendsOf);
   const list = source.filter((f) => f.name.toLowerCase().includes(q));
   const title = isMine ? 'Your friends' : `${state.friendsOf.split(' ')[0]}’s friends`;
 
   function addFriend() {
     const name = addDraft.trim();
     if (!name) return;
-    dispatch({ type: 'ADD_FRIEND_BY_NAME', name });
+    dispatch({ type: 'SEND_FRIEND_REQUEST_BY_NAME', name });
     setAddDraft('');
   }
 

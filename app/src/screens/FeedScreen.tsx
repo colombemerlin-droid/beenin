@@ -6,7 +6,7 @@ import { natLabel } from '../state/selectors';
 import { DotsIcon, ThumbsUpIcon, CommentIcon } from '../ui/icons';
 import { Avatar } from '../ui/Avatar';
 import { EmptyState } from '../ui/EmptyState';
-import type { Entry, FriendPost } from '../types';
+import type { Entry, FriendPost, Companion } from '../types';
 
 interface FeedRow {
   id: string;
@@ -25,9 +25,17 @@ interface FeedRow {
   kudos: string[];
   iK: boolean;
   comments: number;
+  mapName?: string;
+  // True only for a group map's own backfill/quick-add entries (no full detail view exists for those).
+  // A personal entry that merely happens to be linked to a map stays fully interactive.
+  isMapNative?: boolean;
+  companionName?: string;
+  metLine?: string;
 }
 
-function rowFromEntry(e: Entry): FeedRow {
+function rowFromEntry(e: Entry, companions: Companion[], mapName?: string, isMapNative?: boolean): FeedRow {
+  const companion = e.companionId ? companions.find((c) => c.id === e.companionId) : undefined;
+  const metParts = [e.metDateNumber ? `date #${e.metDateNumber}` : '', e.metDateLocation].filter(Boolean);
   return {
     id: e.id,
     mine: true,
@@ -45,6 +53,10 @@ function rowFromEntry(e: Entry): FeedRow {
     kudos: e.kudos,
     iK: e.iK,
     comments: e.comments.length,
+    mapName,
+    isMapNative,
+    companionName: companion && !e.hideName ? companion.name : undefined,
+    metLine: metParts.length ? metParts.join(' · ') : undefined,
   };
 }
 
@@ -71,9 +83,12 @@ function rowFromFriendPost(p: FriendPost): FeedRow {
 
 export function FeedScreen() {
   const { state, dispatch } = useStore();
-  const own = state.entries.filter((e) => e.pub && !e.stub).map(rowFromEntry);
+  const own = state.entries
+    .filter((e) => e.pub && !e.stub)
+    .map((e) => rowFromEntry(e, state.companions, e.mapId ? state.maps.find((m) => m.id === e.mapId)?.name : undefined));
+  const mapRows = state.maps.flatMap((m) => m.entries.filter((e) => e.pub && !e.stub).map((e) => rowFromEntry(e, state.companions, m.name, true)));
   const friends = state.friendPosts.map(rowFromFriendPost);
-  const rows = [...friends, ...own].sort((a, b) => a.ord - b.ord);
+  const rows = [...friends, ...own, ...mapRows].sort((a, b) => a.ord - b.ord);
 
   return (
     <div className="noscroll" style={{ position: 'absolute', inset: 0, overflowY: 'auto', padding: '4px 20px 120px' }}>
@@ -112,27 +127,57 @@ export function FeedScreen() {
                   <span style={{ color: 'var(--ink-40)' }}> · {p.when}</span>
                 </div>
                 <div style={{ font: '400 13px/1.45 Inter, sans-serif', color: 'var(--ink-body)', marginTop: 1 }}>
-                  stamped {flagOf(p.country)} {p.country}
+                  {p.isMapNative && p.mapName ? (
+                    <>
+                      added {flagOf(p.country)} {p.country} on <b style={{ fontWeight: 600 }}>{p.mapName}</b>
+                    </>
+                  ) : p.country ? (
+                    <>
+                      stamped {flagOf(p.country)} {p.country}
+                      {p.mapName && (
+                        <>
+                          {' '}
+                          on <b style={{ fontWeight: 600 }}>{p.mapName}</b>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    'shared a story'
+                  )}
+                  {p.companionName && (
+                    <>
+                      {' '}
+                      with <b style={{ fontWeight: 600 }}>{p.companionName}</b>
+                    </>
+                  )}
                 </div>
+                {p.metLine && (
+                  <div style={{ font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 2 }}>We met · {p.metLine}</div>
+                )}
               </div>
-              <button
-                onClick={() => (p.mine ? dispatch({ type: 'OPEN_MINE_MENU', id: p.id }) : dispatch({ type: 'OPEN_FEED_MENU', id: p.id }))}
-                style={{ width: 30, height: 30, flex: 'none', background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--ink-40)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <DotsIcon />
-              </button>
+              {!p.isMapNative && (
+                <button
+                  onClick={() => (p.mine ? dispatch({ type: 'OPEN_MINE_MENU', id: p.id }) : dispatch({ type: 'OPEN_FEED_MENU', id: p.id }))}
+                  style={{ width: 30, height: 30, flex: 'none', background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--ink-40)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <DotsIcon />
+                </button>
+              )}
             </div>
 
             <button
-              onClick={() => dispatch({ type: 'OPEN_DETAIL', kind: p.mine ? 'mine' : 'feed', id: p.id })}
-              style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 0, padding: 0, marginTop: 12, cursor: 'pointer', color: 'var(--ink)' }}
+              onClick={() => !p.isMapNative && dispatch({ type: 'OPEN_DETAIL', kind: p.mine ? 'mine' : 'feed', id: p.id })}
+              style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 0, padding: 0, marginTop: 12, cursor: p.isMapNative ? 'default' : 'pointer', color: 'var(--ink)' }}
             >
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="label">Passport</span>
-                <span style={{ font: '500 14px/1.3 Inter, sans-serif', color: 'var(--ink)' }}>{p.nationality}</span>
-                <span style={{ flex: 1 }} />
-                {p.emoji && <span style={{ fontSize: 18, lineHeight: 1 }}>{p.emoji}</span>}
-              </span>
+              {p.nationality && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="label">Passport</span>
+                  <span style={{ font: '500 14px/1.3 Inter, sans-serif', color: 'var(--ink)' }}>{p.nationality}</span>
+                  <span style={{ flex: 1 }} />
+                  {p.emoji && <span style={{ fontSize: 18, lineHeight: 1 }}>{p.emoji}</span>}
+                </span>
+              )}
+              {!p.nationality && p.emoji && <span style={{ fontSize: 18, lineHeight: 1 }}>{p.emoji}</span>}
               {p.place && (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 9, color: 'var(--ink-body)' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -162,6 +207,7 @@ export function FeedScreen() {
               {p.dateLabel && <span style={{ display: 'block', font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 10 }}>{p.dateLabel}</span>}
             </button>
 
+            {!p.isMapNative && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--stone)' }}>
               <button
                 onClick={() => dispatch({ type: 'TOGGLE_KUDOS', kind: p.mine ? 'mine' : 'feed', id: p.id })}
@@ -197,6 +243,7 @@ export function FeedScreen() {
                 <span>{p.comments}</span>
               </button>
             </div>
+            )}
           </div>
         ))}
       </div>

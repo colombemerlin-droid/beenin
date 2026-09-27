@@ -3,8 +3,9 @@ import * as d3 from 'd3-geo';
 import { feature } from 'topojson-client';
 
 // Vendored from the world-atlas npm package (countries-110m.json) so the map
-// doesn't depend on a CDN being reachable at runtime.
-const ATLAS = '/countries-110m.json';
+// doesn't depend on a CDN being reachable at runtime. Resolved against Vite's
+// configured base so it also works from a relative (e.g. file://) build.
+const ATLAS = import.meta.env.BASE_URL + 'countries-110m.json';
 
 interface GeoGeometry {
   type: string;

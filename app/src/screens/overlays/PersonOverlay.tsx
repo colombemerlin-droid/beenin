@@ -9,6 +9,7 @@ export function PersonOverlay() {
   const p = state.person;
 
   const posts = state.friendPosts.filter((post) => post.who === p.name);
+  const isFriend = p.requestState === 'accepted';
 
   return (
     <div className="noscroll" style={{ position: 'absolute', inset: 0, background: 'var(--cream-lighter)', zIndex: 40, overflowY: 'auto' }}>
@@ -24,14 +25,43 @@ export function PersonOverlay() {
           </div>
         </div>
 
-        {!p.friend ? (
+        {!isFriend ? (
           <>
-            <button
-              onClick={() => dispatch({ type: 'ADD_FRIEND' })}
-              style={{ width: '100%', marginTop: 20, padding: 14, borderRadius: 8, border: 0, background: 'var(--coral)', color: '#FFF8F2', font: '600 15px/1 Inter, sans-serif', cursor: 'pointer' }}
-            >
-              Add friend
-            </button>
+            {p.requestState === 'pending_in' ? (
+              <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                <button
+                  onClick={() => dispatch({ type: 'APPROVE_FRIEND_REQUEST', name: p.name })}
+                  style={{ flex: 1, padding: 14, borderRadius: 8, border: 0, background: 'var(--coral)', color: '#FFF8F2', font: '600 15px/1 Inter, sans-serif', cursor: 'pointer' }}
+                >
+                  Approve
+                </button>
+                <button
+                  onClick={() => dispatch({ type: 'DECLINE_FRIEND_REQUEST', name: p.name })}
+                  style={{ flex: 1, padding: 14, borderRadius: 8, border: '1px solid var(--stone)', background: 'transparent', color: 'var(--ink-body)', font: '600 15px/1 Inter, sans-serif', cursor: 'pointer' }}
+                >
+                  Decline
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => dispatch({ type: 'SEND_FRIEND_REQUEST' })}
+                disabled={p.requestState === 'pending_out'}
+                style={{
+                  width: '100%',
+                  marginTop: 20,
+                  padding: 14,
+                  borderRadius: 8,
+                  border: 0,
+                  background: p.requestState === 'pending_out' ? 'var(--ink-40)' : 'var(--coral)',
+                  color: '#FFF8F2',
+                  font: '600 15px/1 Inter, sans-serif',
+                  cursor: p.requestState === 'pending_out' ? 'default' : 'pointer',
+                  opacity: p.requestState === 'pending_out' ? 0.6 : 1,
+                }}
+              >
+                {p.requestState === 'pending_out' ? 'Request sent' : 'Add friend'}
+              </button>
+            )}
             <div style={{ marginTop: 16, borderRadius: 14, border: '1px dashed var(--stone-dashed)', padding: 16, font: '400 13px/1.6 Inter, sans-serif', color: 'var(--ink-body)' }}>
               Nothing to see until you're friends. Send the request — one accept from either side and you're both through customs.
             </div>

@@ -1,8 +1,9 @@
 import { useRef } from 'react';
 import { useStore } from '../state/store';
 import { WorldMap } from '../components/WorldMap';
-import { flagOf, natFlagOf, pct, byCountry, CONTINENTS } from '../data/countries';
-import { beenCountries, natCountries, continentBreakdown, touchedContinents, entryNats } from '../state/selectors';
+import { flagOf, natFlagOf, pct } from '../data/countries';
+import { UNKNOWN } from '../ui/Picker';
+import { beenCountries, natCountries, continentBreakdown, touchedContinents, continentGroups, entryNats } from '../state/selectors';
 import { ChevronRightIcon } from '../ui/icons';
 import { EmptyState } from '../ui/EmptyState';
 
@@ -14,34 +15,42 @@ export function MapScreen() {
   const been = beenCountries(state);
   const natCs = natCountries(state);
   const active = state.side === 0 ? been : natCs;
-  const continents = continentBreakdown(active);
-  const touched = touchedContinents(active);
+  // pct() is a share of the real 195-country world — an "I don't know" stamp
+  // still counts toward your own tally but shouldn't inflate that percentage.
+  const realActive = active.filter((c) => c !== UNKNOWN);
+  const continents = continentBreakdown(realActive);
+  const touched = touchedContinents(realActive);
 
-  const azList = active
-    .slice()
-    .sort((a, b) => a.localeCompare(b))
-    .map((c) => {
-      const natSet = new Set<string>();
-      if (state.side === 0) {
-        state.entries.forEach((e) => {
-          if (e.country === c) entryNats(e).forEach((n) => natSet.add(n));
-        });
-      }
-      const natsHere = [...natSet];
-      const continentName = state.side === 1 ? continentNameFor(c) : '';
-      return {
-        country: c,
-        flag: flagOf(c),
-        open: state.azOpen === c,
-        nats: natsHere,
-        sub:
-          state.side === 0
-            ? natsHere.length === 1
-              ? '1 passport'
-              : `${natsHere.length} passports`
-            : continentName,
-      };
-    });
+  const groups = continentGroups(active).map((g) => ({
+    continent: g.continent,
+    items: g.countries.map((c) => buildRow(c, state)),
+  }));
+  if (active.includes(UNKNOWN)) {
+    groups.push({ continent: 'Unsure', items: [buildRow(UNKNOWN, state)] });
+  }
+
+  function buildRow(c: string, s: typeof state) {
+    const natSet = new Set<string>();
+    if (s.side === 0) {
+      s.entries.forEach((e) => {
+        if (e.country === c) entryNats(e).forEach((n) => natSet.add(n));
+      });
+      s.maps.forEach((m) => m.entries.forEach((e) => {
+        if (e.country === c) m.nationalities.forEach((n) => natSet.add(n));
+      }));
+    }
+    const natsHere = [...natSet];
+    return {
+      country: c,
+      flag: flagOf(c),
+      open: s.azOpen === c,
+      nats: natsHere,
+      sub: s.side === 0 ? (natsHere.length === 1 ? '1 passport' : `${natsHere.length} passports`) : '',
+    };
+  }
+
+  const firstName = state.profile.name.trim().split(' ')[0];
+  const headerTitle = firstName ? `${firstName}’s passport` : 'Your passport';
 
   function onDown(e: React.PointerEvent) {
     startX.current = e.clientX;
@@ -65,11 +74,22 @@ export function MapScreen() {
 
   return (
     <div className="noscroll" style={{ position: 'absolute', inset: 0, overflowY: 'auto', padding: '4px 20px 120px' }}>
-      <div style={{ padding: '8px 0 14px' }}>
+      <div style={{ padding: '8px 0 14px', textAlign: 'center' }}>
         <div className="serif" style={{ fontSize: 28, lineHeight: 1.15 }}>
-          Your Passport
+          {headerTitle}
         </div>
         <div style={{ font: '400 13px/1.45 Inter, sans-serif', color: 'var(--ink-body)', marginTop: 2 }}>private to you. always.</div>
+      </div>
+
+      <div className="noscroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '2px 0 16px' }}>
+        {state.maps.map((m) => (
+          <button key={m.id} onClick={() => dispatch({ type: 'OPEN_MAP', mapId: m.id })} style={mapChipStyle}>
+            {m.name}
+          </button>
+        ))}
+        <button onClick={() => dispatch({ type: 'OPEN_NEW_MAP' })} style={{ ...mapChipStyle, border: '1px dashed var(--stone-dashed)', background: 'transparent', color: 'var(--ink-body)' }}>
+          + New map
+        </button>
       </div>
 
       <div
@@ -139,7 +159,7 @@ export function MapScreen() {
         </div>
         <div style={cardStyle}>
           <div className="serif" style={{ fontSize: 46, lineHeight: 1, color: 'var(--coral)' }}>
-            {pct(active.length)}
+            {pct(realActive.length)}
           </div>
           <div className="label" style={{ marginTop: 6 }}>
             Of the world
@@ -156,8 +176,8 @@ export function MapScreen() {
               : 'Log an entry with someone’s passport and their home country lights up here.'
           }
           action={
-            <button onClick={() => dispatch({ type: 'OPEN_ADD' })} style={ctaButtonStyle}>
-              Add your first stamp
+            <button onClick={() => dispatch({ type: 'OPEN_STORY' })} style={ctaButtonStyle}>
+              Add your first story
             </button>
           }
         />
@@ -185,30 +205,42 @@ export function MapScreen() {
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
               <span className="label">{state.side === 0 ? 'Countries' : 'Passports'}</span>
               <span style={{ flex: 1 }} />
-              <span style={{ font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)' }}>A–Z</span>
+              <span style={{ font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)' }}>by continent, A–Z</span>
             </div>
-            {azList.map((c) => (
-              <div key={c.country} style={{ borderTop: '1px solid var(--stone)' }}>
-                <button
-                  onClick={() => dispatch({ type: 'TOGGLE_AZ', country: c.country })}
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', background: 'transparent', border: 0, cursor: 'pointer', textAlign: 'left', color: 'var(--ink)' }}
-                >
-                  <span style={{ fontSize: 17, lineHeight: 1, flex: 'none' }}>{c.flag}</span>
-                  <span style={{ flex: 1, font: '400 14px/1.4 Inter, sans-serif' }}>{c.country}</span>
-                  <span style={{ font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)' }}>{c.sub}</span>
-                  <span style={{ color: 'var(--ink-40)', display: 'flex', transform: c.open ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 180ms' }}>
-                    <ChevronRightIcon size={15} />
-                  </span>
-                </button>
-                {c.open && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, padding: '0 0 12px 27px' }}>
-                    {(c.nats.length ? c.nats.sort() : ['no passport on file']).map((n) => (
-                      <span key={n} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 11px', borderRadius: 999, background: 'var(--coral-tint)', color: 'var(--coral-dark)', font: '500 13px/1.3 Inter, sans-serif' }}>
-                        <span style={{ fontSize: 13, lineHeight: 1 }}>{c.nats.length ? natFlagOf(n) : '\u{1F6C2}'}</span>
-                        <span>{n}</span>
-                      </span>
-                    ))}
-                  </div>
+            {groups.map((g) => (
+              <div key={g.continent}>
+                <div style={{ font: '600 11px/1.4 Inter, sans-serif', letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--ink-40)', padding: '10px 0 2px' }}>{g.continent}</div>
+                {g.items.map((c) =>
+                  state.side === 0 ? (
+                    <div key={c.country} style={{ borderTop: '1px solid var(--stone)' }}>
+                      <button
+                        onClick={() => dispatch({ type: 'TOGGLE_AZ', country: c.country })}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', background: 'transparent', border: 0, cursor: 'pointer', textAlign: 'left', color: 'var(--ink)' }}
+                      >
+                        <span style={{ fontSize: 17, lineHeight: 1, flex: 'none' }}>{c.flag}</span>
+                        <span style={{ flex: 1, font: '400 14px/1.4 Inter, sans-serif' }}>{c.country}</span>
+                        <span style={{ font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)' }}>{c.sub}</span>
+                        <span style={{ color: 'var(--ink-40)', display: 'flex', transform: c.open ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 180ms' }}>
+                          <ChevronRightIcon size={15} />
+                        </span>
+                      </button>
+                      {c.open && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, padding: '0 0 12px 27px' }}>
+                          {(c.nats.length ? c.nats.slice().sort() : ['no passport on file']).map((n) => (
+                            <span key={n} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 11px', borderRadius: 999, background: 'var(--coral-tint)', color: 'var(--coral-dark)', font: '500 13px/1.3 Inter, sans-serif' }}>
+                              <span style={{ fontSize: 13, lineHeight: 1 }}>{c.nats.length ? natFlagOf(n) : '\u{1F6C2}'}</span>
+                              <span>{n}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div key={c.country} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderTop: '1px solid var(--stone)' }}>
+                      <span style={{ fontSize: 17, lineHeight: 1, flex: 'none' }}>{c.flag}</span>
+                      <span style={{ flex: 1, font: '400 14px/1.4 Inter, sans-serif' }}>{c.country}</span>
+                    </div>
+                  )
                 )}
               </div>
             ))}
@@ -217,11 +249,6 @@ export function MapScreen() {
       )}
     </div>
   );
-}
-
-function continentNameFor(country: string): string {
-  const pair = byCountry(country);
-  return pair ? CONTINENTS[pair.continent].name : '';
 }
 
 const cardStyle = {
@@ -242,4 +269,16 @@ const ctaButtonStyle = {
   color: '#FFF8F2',
   font: '600 14px/1 Inter, sans-serif',
   cursor: 'pointer',
+} as const;
+
+const mapChipStyle = {
+  flex: 'none',
+  padding: '9px 15px',
+  borderRadius: 999,
+  border: '1px solid var(--stone)',
+  background: 'var(--cream)',
+  color: 'var(--ink)',
+  cursor: 'pointer',
+  font: '500 13px/1.3 Inter, sans-serif',
+  whiteSpace: 'nowrap',
 } as const;

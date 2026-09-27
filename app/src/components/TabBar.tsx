@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useStore } from '../state/store';
-import { TabMapIcon, TabFeedIcon, TabProfileIcon, PlusIcon } from '../ui/icons';
+import { TabMapIcon, TabFeedIcon, TabNotificationsIcon, TabProfileIcon, PlusIcon } from '../ui/icons';
 import type { TabKind } from '../state/types';
 
 export function TabBar() {
@@ -27,7 +27,7 @@ export function TabBar() {
       <TabButton icon={<TabFeedIcon />} label="Feed" active={color('feed')} onClick={() => dispatch({ type: 'SET_TAB', tab: 'feed' })} />
       <div style={{ flex: 1, height: 64, display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
         <button
-          onClick={() => dispatch({ type: 'OPEN_ADD' })}
+          onClick={() => dispatch({ type: 'OPEN_STORY' })}
           style={{
             width: 52,
             height: 52,
@@ -46,7 +46,8 @@ export function TabBar() {
           <PlusIcon />
         </button>
       </div>
-      <TabButton icon={<TabProfileIcon />} label="You" active={color('profile')} onClick={() => dispatch({ type: 'SET_TAB', tab: 'profile' })} />
+      <TabButton icon={<TabNotificationsIcon />} label="Notifications" active={color('notifications')} onClick={() => dispatch({ type: 'SET_TAB', tab: 'notifications' })} />
+      <TabButton icon={<TabProfileIcon />} label="Profile" active={color('profile')} onClick={() => dispatch({ type: 'SET_TAB', tab: 'profile' })} />
     </div>
   );
 }
