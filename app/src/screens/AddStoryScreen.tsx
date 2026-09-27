@@ -1,10 +1,14 @@
 import { useState, type ReactNode } from 'react';
 import { useStore } from '../state/store';
+import { storyFields } from '../state/reducer';
+import * as api from '../lib/api';
+import { initialsOf } from '../lib/identity';
 import { flagOf, natFlagOf } from '../data/countries';
 import { OverlayHeader } from '../ui/OverlayHeader';
 import { Picker, inputStyle } from '../ui/Picker';
 import { Toggle, chipStyle, dashedChipStyle, fieldBtnStyle } from '../ui/formKit';
 import { Avatar } from '../ui/Avatar';
+import { PhotoField } from '../ui/Photo';
 import { CheckIcon } from '../ui/icons';
 
 export function AddStoryScreen() {
@@ -17,10 +21,37 @@ export function AddStoryScreen() {
   const q = query.trim().toLowerCase();
   const matches = q ? state.companions.filter((c) => c.name.toLowerCase().includes(q)) : state.companions;
   const canPublish = !!s.companionId;
+  const userId = state.authUserId;
+
+  function saveCompanion() {
+    if (!s || !s.newCompanion) return;
+    const name = s.newCompanion.name.trim();
+    if (!name) return;
+    const id = crypto.randomUUID();
+    dispatch({ type: 'SAVE_NEW_COMPANION', id });
+    if (userId) {
+      api
+        .createCompanion(userId, { id, name, initials: initialsOf(name) || '??', nationalities: s.newCompanion.nationalities })
+        .catch(() => dispatch({ type: 'SHOW_TOAST', message: "couldn't save that person to your account — they're on this device only." }));
+    }
+  }
+
+  async function publish() {
+    if (!s || !canPublish) return;
+    const fields = storyFields(state, s);
+    dispatch({ type: 'PUBLISH_STORY' });
+    if (!userId) return;
+    try {
+      if (s.isEdit) await api.updateEntry(s.editId, fields);
+      else await api.createEntry(userId, s.editId, fields);
+    } catch {
+      dispatch({ type: 'SHOW_TOAST', message: "couldn't save that to your account — it's on this device only." });
+    }
+  }
 
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 20, background: 'var(--cream-lighter)', display: 'flex', flexDirection: 'column' }}>
-      <OverlayHeader title={s.editId ? 'Edit a story' : 'Add a story'} onBack={() => dispatch({ type: 'CLOSE_STORY' })} />
+      <OverlayHeader title={s.isEdit ? 'Edit a story' : 'Add a story'} onBack={() => dispatch({ type: 'CLOSE_STORY' })} />
 
       <div className="noscroll" style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 24px' }}>
         <div className="serif" style={{ fontSize: 26, lineHeight: 1.15 }}>
@@ -72,7 +103,7 @@ export function AddStoryScreen() {
                 Cancel
               </button>
               <button
-                onClick={() => dispatch({ type: 'SAVE_NEW_COMPANION' })}
+                onClick={saveCompanion}
                 disabled={!s.newCompanion.name.trim()}
                 style={{ ...saveBtnStyle, opacity: s.newCompanion.name.trim() ? 1 : 0.4 }}
               >
@@ -209,26 +240,7 @@ export function AddStoryScreen() {
         <div className="label" style={{ margin: '20px 0 8px' }}>
           Photo · optional
         </div>
-        <button
-          onClick={() => dispatch({ type: 'PATCH_STORY', patch: { photo: !s.photo } })}
-          style={{
-            width: '100%',
-            height: 132,
-            borderRadius: 14,
-            border: '1px solid var(--stone)',
-            backgroundColor: 'var(--paper)',
-            backgroundImage: s.photo ? 'repeating-linear-gradient(135deg, rgba(226,114,91,.12) 0 7px, transparent 7px 14px)' : 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--ink)',
-          }}
-        >
-          <span style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 11, color: 'var(--ink-body)', background: 'var(--cream-lighter)', borderRadius: 4, padding: '4px 8px' }}>
-            {s.photo ? 'photo attached · tap to remove' : 'tap to add a photo'}
-          </span>
-        </button>
+        <PhotoField entryId={s.editId} path={s.photoPath} onChange={(photoPath) => dispatch({ type: 'PATCH_STORY', patch: { photoPath } })} />
         <div style={{ font: '400 12px/1.5 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 8 }}>
           Keep it well-intentioned — photos containing pornographic or illicit content will get your account taken down.
         </div>
@@ -267,7 +279,7 @@ export function AddStoryScreen() {
 
       <div style={{ flex: 'none', padding: '14px 20px 34px', borderTop: '1px solid var(--stone)', display: 'flex', gap: 10 }}>
         <button
-          onClick={() => dispatch({ type: 'PUBLISH_STORY' })}
+          onClick={publish}
           disabled={!canPublish}
           style={{
             flex: 1,

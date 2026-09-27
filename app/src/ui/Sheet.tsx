@@ -1,9 +1,25 @@
 import { useStore } from '../state/store';
+import * as api from '../lib/api';
+import type { SheetAction } from '../state/types';
 
 export function Sheet() {
   const { state, dispatch } = useStore();
   if (!state.sheet) return null;
   const close = () => dispatch({ type: 'CLOSE_SHEET' });
+
+  function pick(kind: SheetAction['kind']) {
+    // Read the target before dispatching — the reducer clears/changes it.
+    const target = state.sheetTarget;
+    const entry = state.entries.find((e) => e.id === target);
+    dispatch({ type: 'PICK_SHEET', kind });
+    const me = state.authUserId;
+    if (!me) return;
+    const fail = () => dispatch({ type: 'SHOW_TOAST', message: "couldn't sync that change to your account." });
+    if (kind === 'report' && state.friendPosts.some((p) => p.id === target)) api.reportEntry(target, me).catch(fail);
+    if (!entry) return;
+    if (kind === 'vis') api.updateEntry(entry.id, { pub: !entry.pub }).catch(fail);
+    if (kind === 'del') api.deleteEntry(entry.id, entry.photoPath).catch(fail);
+  }
   return (
     <div
       onClick={close}
@@ -34,7 +50,7 @@ export function Sheet() {
           {state.sheet.actions.map((a) => (
             <button
               key={a.kind}
-              onClick={() => dispatch({ type: 'PICK_SHEET', kind: a.kind })}
+              onClick={() => pick(a.kind)}
               style={{
                 textAlign: 'left',
                 padding: '14px 14px',

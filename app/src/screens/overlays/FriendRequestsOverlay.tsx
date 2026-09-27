@@ -19,8 +19,8 @@ export function FriendRequestsOverlay() {
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {pending.map((f) => (
               <button
-                key={f.name}
-                onClick={() => dispatch({ type: 'OPEN_PERSON', name: f.name })}
+                key={f.id}
+                onClick={() => dispatch({ type: 'OPEN_PERSON', person: f })}
                 style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 8px', background: 'transparent', border: 0, borderRadius: 14, cursor: 'pointer', textAlign: 'left', color: 'var(--ink)' }}
               >
                 <Avatar token={f.initials} size={40} />

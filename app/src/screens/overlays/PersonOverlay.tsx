@@ -1,14 +1,16 @@
 import { useStore } from '../../state/store';
+import { useFriendActions } from '../../state/useFriendActions';
 import { flagOf } from '../../data/countries';
 import { OverlayHeader } from '../../ui/OverlayHeader';
 import { Avatar } from '../../ui/Avatar';
 
 export function PersonOverlay() {
   const { state, dispatch } = useStore();
+  const { sendRequest, approve, decline } = useFriendActions();
   if (state.overlay !== 'person' || !state.person) return null;
   const p = state.person;
 
-  const posts = state.friendPosts.filter((post) => post.who === p.name);
+  const posts = state.friendPosts.filter((post) => post.ownerId === p.id);
   const isFriend = p.requestState === 'accepted';
 
   return (
@@ -21,7 +23,9 @@ export function PersonOverlay() {
             <div className="serif" style={{ fontSize: 25, lineHeight: 1.1 }}>
               {p.name}
             </div>
-            <div style={{ font: '400 13px/1.45 Inter, sans-serif', color: 'var(--ink-body)', marginTop: 3 }}>{p.status}</div>
+            <div style={{ font: '400 13px/1.45 Inter, sans-serif', color: 'var(--ink-body)', marginTop: 3 }}>
+              {[p.handle && `@${p.handle}`, isFriend ? 'friends' : p.status].filter(Boolean).join(' · ')}
+            </div>
           </div>
         </div>
 
@@ -30,13 +34,13 @@ export function PersonOverlay() {
             {p.requestState === 'pending_in' ? (
               <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
                 <button
-                  onClick={() => dispatch({ type: 'APPROVE_FRIEND_REQUEST', name: p.name })}
+                  onClick={() => approve(p.id)}
                   style={{ flex: 1, padding: 14, borderRadius: 8, border: 0, background: 'var(--coral)', color: '#FFF8F2', font: '600 15px/1 Inter, sans-serif', cursor: 'pointer' }}
                 >
                   Approve
                 </button>
                 <button
-                  onClick={() => dispatch({ type: 'DECLINE_FRIEND_REQUEST', name: p.name })}
+                  onClick={() => decline(p.id)}
                   style={{ flex: 1, padding: 14, borderRadius: 8, border: '1px solid var(--stone)', background: 'transparent', color: 'var(--ink-body)', font: '600 15px/1 Inter, sans-serif', cursor: 'pointer' }}
                 >
                   Decline
@@ -44,7 +48,7 @@ export function PersonOverlay() {
               </div>
             ) : (
               <button
-                onClick={() => dispatch({ type: 'SEND_FRIEND_REQUEST' })}
+                onClick={sendRequest}
                 disabled={p.requestState === 'pending_out'}
                 style={{
                   width: '100%',
@@ -68,29 +72,6 @@ export function PersonOverlay() {
           </>
         ) : (
           <>
-            <button
-              onClick={() => dispatch({ type: 'OPEN_FRIENDS', friendsOf: p.name })}
-              style={{
-                display: 'flex',
-                alignItems: 'baseline',
-                gap: 7,
-                marginTop: 18,
-                padding: '14px 0',
-                width: '100%',
-                background: 'transparent',
-                border: 0,
-                borderTop: '1px solid var(--stone)',
-                borderBottom: '1px solid var(--stone)',
-                cursor: 'pointer',
-                color: 'var(--ink)',
-                textAlign: 'left',
-              }}
-            >
-              <span className="serif" style={{ fontSize: 24, lineHeight: 1 }}>
-                {p.friends}
-              </span>
-              <span style={{ font: '400 13px/1.45 Inter, sans-serif', color: 'var(--ink-body)' }}>friends</span>
-            </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '22px 0 12px' }}>
               <span className="label">Wall</span>
               <span style={{ flex: 1, height: 1, background: 'var(--stone)' }} />
@@ -107,8 +88,11 @@ export function PersonOverlay() {
                   style={{ textAlign: 'left', background: 'var(--cream)', border: 0, borderRadius: 14, padding: '13px 16px', cursor: 'pointer', color: 'var(--ink)', boxShadow: '0 1px 2px rgba(31,26,23,.04), 0 4px 14px rgba(31,26,23,.06)' }}
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 17, lineHeight: 1 }}>{flagOf(q.country)}</span>
-                    <span style={{ flex: 1, font: '400 13px/1.45 Inter, sans-serif', color: 'var(--ink-body)' }}>stamped {q.country}</span>
+                    {q.country && <span style={{ fontSize: 17, lineHeight: 1 }}>{flagOf(q.country)}</span>}
+                    <span style={{ flex: 1, font: '400 13px/1.45 Inter, sans-serif', color: 'var(--ink-body)' }}>
+                      {q.country ? `stamped ${q.country}` : 'shared a story'}
+                      {q.companionName ? ` with ${q.companionName}` : ''}
+                    </span>
                     {q.emoji && <span style={{ fontSize: 17, lineHeight: 1 }}>{q.emoji}</span>}
                   </span>
                   {q.note && <span style={{ display: 'block', fontFamily: 'Fraunces, Georgia, serif', fontWeight: 400, fontSize: 17, lineHeight: 1.4, marginTop: 8 }}>“{q.note}”</span>}

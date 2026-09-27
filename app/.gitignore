@@ -13,6 +13,9 @@ dist-ssr
 export-html
 been-in-static-export*
 *.local
+.env
+.env.local
+!.env.example
 
 # Editor directories and files
 .vscode/*

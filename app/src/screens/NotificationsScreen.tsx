@@ -4,6 +4,10 @@ import { notificationFeed } from '../state/selectors';
 import { ChevronRightIcon, ThumbsUpIcon, CommentIcon } from '../ui/icons';
 import { EmptyState } from '../ui/EmptyState';
 
+function where(country: string): string {
+  return country ? `${flagOf(country)} ${country}` : 'your story';
+}
+
 export function NotificationsScreen() {
   const { state, dispatch } = useStore();
   const pending = state.friends.filter((f) => f.requestState === 'pending_in');
@@ -102,17 +106,17 @@ export function NotificationsScreen() {
                 <span style={{ flex: 1, minWidth: 0, font: '400 14px/1.45 Inter, sans-serif' }}>
                   {n.kind === 'kudos' && (
                     <>
-                      <b style={{ fontWeight: 600 }}>{n.who}</b> gave you a stamp of approval on {flagOf(n.country)} {n.country}
+                      <b style={{ fontWeight: 600 }}>{n.who}</b> gave you a stamp of approval on {where(n.country)}
                     </>
                   )}
                   {n.kind === 'comment' && (
                     <>
-                      <b style={{ fontWeight: 600 }}>{n.who}</b> commented “{n.text}” on {flagOf(n.country)} {n.country}
+                      <b style={{ fontWeight: 600 }}>{n.who}</b> commented “{n.text}” on {where(n.country)}
                     </>
                   )}
                   {n.kind === 'memory' && (
                     <>
-                      {n.years} year{n.years > 1 ? 's' : ''} ago today: {flagOf(n.country)} {n.country}
+                      {n.years} year{n.years > 1 ? 's' : ''} ago today: {n.country ? where(n.country) : 'a story'}
                     </>
                   )}
                 </span>

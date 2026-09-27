@@ -4,6 +4,7 @@ import { TabBar } from './components/TabBar';
 import { Toast } from './ui/Toast';
 import { Sheet } from './ui/Sheet';
 import { SignInScreen } from './screens/SignInScreen';
+import { ChooseHandleScreen } from './screens/ChooseHandleScreen';
 import { SignupScreen } from './screens/SignupScreen';
 import { MapScreen } from './screens/MapScreen';
 import { FeedScreen } from './screens/FeedScreen';
@@ -22,12 +23,32 @@ import { MapPickerOverlay } from './screens/overlays/MapPickerOverlay';
 function AppShell() {
   const { state } = useStore();
 
+  if (state.authLoading) {
+    return (
+      <PhoneFrame>
+        <StatusBar />
+        <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }} />
+      </PhoneFrame>
+    );
+  }
+
   if (!state.signedIn) {
     return (
       <PhoneFrame>
         <StatusBar />
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
           <SignInScreen />
+        </div>
+      </PhoneFrame>
+    );
+  }
+
+  if (state.onboardingStep === 'handle') {
+    return (
+      <PhoneFrame>
+        <StatusBar />
+        <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+          <ChooseHandleScreen />
         </div>
       </PhoneFrame>
     );

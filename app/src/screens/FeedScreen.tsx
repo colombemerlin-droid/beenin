@@ -1,4 +1,5 @@
 import { useStore } from '../state/store';
+import { useEntryActions } from '../state/useEntryActions';
 import { flagOf } from '../data/countries';
 import { fmtDate } from '../data/format';
 import { ME_KEY } from '../lib/identity';
@@ -6,11 +7,13 @@ import { natLabel } from '../state/selectors';
 import { DotsIcon, ThumbsUpIcon, CommentIcon } from '../ui/icons';
 import { Avatar } from '../ui/Avatar';
 import { EmptyState } from '../ui/EmptyState';
+import { EntryPhoto } from '../ui/Photo';
 import type { Entry, FriendPost, Companion } from '../types';
 
 interface FeedRow {
   id: string;
   mine: boolean;
+  ownerId: string;
   who: string;
   initials: string;
   when: string;
@@ -20,7 +23,7 @@ interface FeedRow {
   place: string;
   note: string;
   emoji: string;
-  photo: boolean;
+  photoPath: string;
   dateLabel: string;
   kudos: string[];
   iK: boolean;
@@ -33,12 +36,17 @@ interface FeedRow {
   metLine?: string;
 }
 
+function metLineOf(num?: string, where?: string): string | undefined {
+  const parts = [num ? `date #${num}` : '', where].filter(Boolean);
+  return parts.length ? parts.join(' · ') : undefined;
+}
+
 function rowFromEntry(e: Entry, companions: Companion[], mapName?: string, isMapNative?: boolean): FeedRow {
   const companion = e.companionId ? companions.find((c) => c.id === e.companionId) : undefined;
-  const metParts = [e.metDateNumber ? `date #${e.metDateNumber}` : '', e.metDateLocation].filter(Boolean);
   return {
     id: e.id,
     mine: true,
+    ownerId: '',
     who: 'You',
     initials: ME_KEY,
     when: e.when,
@@ -48,7 +56,7 @@ function rowFromEntry(e: Entry, companions: Companion[], mapName?: string, isMap
     place: e.placePub ? e.place : '',
     note: e.note,
     emoji: e.emoji,
-    photo: e.photo,
+    photoPath: e.photoPath,
     dateLabel: e.date ? fmtDate(e.date) : '',
     kudos: e.kudos,
     iK: e.iK,
@@ -56,7 +64,7 @@ function rowFromEntry(e: Entry, companions: Companion[], mapName?: string, isMap
     mapName,
     isMapNative,
     companionName: companion && !e.hideName ? companion.name : undefined,
-    metLine: metParts.length ? metParts.join(' · ') : undefined,
+    metLine: metLineOf(e.metDateNumber, e.metDateLocation),
   };
 }
 
@@ -64,6 +72,7 @@ function rowFromFriendPost(p: FriendPost): FeedRow {
   return {
     id: p.id,
     mine: false,
+    ownerId: p.ownerId,
     who: p.who,
     initials: p.initials,
     when: p.when,
@@ -73,22 +82,31 @@ function rowFromFriendPost(p: FriendPost): FeedRow {
     place: p.place,
     note: p.note,
     emoji: p.emoji,
-    photo: p.photo,
-    dateLabel: '',
+    photoPath: p.photoPath,
+    dateLabel: p.date ? fmtDate(p.date) : '',
     kudos: p.kudos,
     iK: p.iK,
     comments: p.comments.length,
+    companionName: p.companionName,
+    metLine: metLineOf(p.metDateNumber, p.metDateLocation),
   };
 }
 
 export function FeedScreen() {
   const { state, dispatch } = useStore();
+  const { toggleKudos } = useEntryActions();
   const own = state.entries
     .filter((e) => e.pub && !e.stub)
     .map((e) => rowFromEntry(e, state.companions, e.mapId ? state.maps.find((m) => m.id === e.mapId)?.name : undefined));
   const mapRows = state.maps.flatMap((m) => m.entries.filter((e) => e.pub && !e.stub).map((e) => rowFromEntry(e, state.companions, m.name, true)));
   const friends = state.friendPosts.map(rowFromFriendPost);
   const rows = [...friends, ...own, ...mapRows].sort((a, b) => a.ord - b.ord);
+
+  function openWho(p: FeedRow) {
+    if (p.mine) return dispatch({ type: 'SET_TAB', tab: 'profile' });
+    const f = state.friends.find((x) => x.id === p.ownerId);
+    if (f) dispatch({ type: 'OPEN_PERSON', person: f });
+  }
 
   return (
     <div className="noscroll" style={{ position: 'absolute', inset: 0, overflowY: 'auto', padding: '4px 20px 120px' }}>
@@ -114,12 +132,12 @@ export function FeedScreen() {
                 as="button"
                 token={p.initials}
                 size={38}
-                onClick={() => (p.mine ? dispatch({ type: 'SET_TAB', tab: 'profile' }) : dispatch({ type: 'OPEN_PERSON', name: p.who }))}
+                onClick={() => openWho(p)}
               />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ font: '400 14px/1.4 Inter, sans-serif' }}>
                   <button
-                    onClick={() => (p.mine ? dispatch({ type: 'SET_TAB', tab: 'profile' }) : dispatch({ type: 'OPEN_PERSON', name: p.who }))}
+                    onClick={() => openWho(p)}
                     style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', font: '600 14px/1.4 Inter, sans-serif', color: 'var(--ink)' }}
                   >
                     {p.who}
@@ -188,20 +206,9 @@ export function FeedScreen() {
                 </span>
               )}
               {p.note && <span style={{ display: 'block', fontFamily: 'Fraunces, Georgia, serif', fontWeight: 400, fontSize: 17, lineHeight: 1.4, marginTop: 10 }}>“{p.note}”</span>}
-              {p.photo && (
-                <span
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    marginTop: 12,
-                    height: 140,
-                    borderRadius: 8,
-                    border: '1px solid var(--stone)',
-                    backgroundImage: 'repeating-linear-gradient(135deg, rgba(226,114,91,.1) 0 7px, transparent 7px 14px)',
-                    padding: 8,
-                  }}
-                >
-                  <span style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 10, color: 'var(--ink-body)', background: 'var(--cream-lighter)', borderRadius: 4, padding: '3px 6px' }}>photo</span>
+              {p.photoPath && (
+                <span style={{ display: 'block', marginTop: 12 }}>
+                  <EntryPhoto path={p.photoPath} height={180} radius={8} />
                 </span>
               )}
               {p.dateLabel && <span style={{ display: 'block', font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 10 }}>{p.dateLabel}</span>}
@@ -210,7 +217,7 @@ export function FeedScreen() {
             {!p.isMapNative && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--stone)' }}>
               <button
-                onClick={() => dispatch({ type: 'TOGGLE_KUDOS', kind: p.mine ? 'mine' : 'feed', id: p.id })}
+                onClick={() => toggleKudos(p.mine ? 'mine' : 'feed', p.id)}
                 style={{
                   width: 34,
                   height: 34,

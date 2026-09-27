@@ -1,4 +1,5 @@
 import { useStore } from '../../state/store';
+import * as api from '../../lib/api';
 import { flagOf, natFlagOf, pct } from '../../data/countries';
 import { continentGroups } from '../../state/selectors';
 import { OverlayHeader } from '../../ui/OverlayHeader';
@@ -13,6 +14,14 @@ export function GroupMapOverlay() {
   if (!map || state.signup) return null;
 
   const linkedEntries = state.entries.filter((e) => e.mapId === map.id);
+
+  function saveRename() {
+    const name = state.mapRenameDraft.trim();
+    dispatch({ type: 'SAVE_MAP_RENAME' });
+    if (map && name && name !== map.name) {
+      api.updateMap(map.id, { name }).catch(() => dispatch({ type: 'SHOW_TOAST', message: "couldn't rename it on your account." }));
+    }
+  }
   const countries = [...new Set([...map.entries, ...linkedEntries].map((e) => e.country).filter(Boolean))];
   const groups = continentGroups(countries);
 
@@ -37,10 +46,10 @@ export function GroupMapOverlay() {
               autoFocus
               value={state.mapRenameDraft}
               onChange={(e) => dispatch({ type: 'PATCH_MAP_RENAME', name: e.target.value })}
-              onKeyDown={(e) => e.key === 'Enter' && dispatch({ type: 'SAVE_MAP_RENAME' })}
+              onKeyDown={(e) => e.key === 'Enter' && saveRename()}
               style={{ ...inputStyle, flex: 1 }}
             />
-            <button onClick={() => dispatch({ type: 'SAVE_MAP_RENAME' })} style={primaryBtnStyle}>
+            <button onClick={saveRename} style={primaryBtnStyle}>
               Save
             </button>
           </div>

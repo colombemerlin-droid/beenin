@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { useStore } from '../state/store';
+import * as api from '../lib/api';
 import { PAIRS, flagOf } from '../data/countries';
 import { EMOJI_GROUPS, splitEmoji } from '../data/emoji';
 import { OverlayHeader } from './OverlayHeader';
@@ -17,6 +18,14 @@ export function Picker() {
 
   const isNatMode = pk === 'signupNat' || pk === 'mapNat' || pk === 'companionNat';
   const isMulti = pk === 'signupNat' || pk === 'mapNat' || pk === 'companionNat';
+
+  function save() {
+    // Editing an existing map's passports (the reducer applies the same rule).
+    const mapId = pk === 'mapNat' && state.overlay !== 'newMap' ? state.openMapId : null;
+    const nationalities = state.pickerDraft.slice();
+    dispatch({ type: 'SAVE_PICKER' });
+    if (mapId) api.updateMap(mapId, { nationalities }).catch(() => dispatch({ type: 'SHOW_TOAST', message: "couldn't save that to your account." }));
+  }
   const title = isNatMode ? 'Passport' : 'Country';
   const q = state.pickerQuery.toLowerCase();
 
@@ -103,7 +112,7 @@ export function Picker() {
           <span style={{ flex: 1, font: '400 13px/1.45 Inter, sans-serif', color: 'var(--ink-40)' }}>
             {state.pickerDraft.length ? state.pickerDraft.join(' · ') : 'nothing selected'}
           </span>
-          <button onClick={() => dispatch({ type: 'SAVE_PICKER' })} style={primaryBtnStyle}>
+          <button onClick={save} style={primaryBtnStyle}>
             Save
           </button>
         </div>

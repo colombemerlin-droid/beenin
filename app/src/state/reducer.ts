@@ -1,19 +1,32 @@
 import { today } from '../data/format';
 import { ME_KEY, initialsOf } from '../lib/identity';
-import type { AppAction, AppState, SignupPair, GroupMap, StoryDraft } from './types';
-import type { Entry, Friend, Companion } from '../types';
+import type { AppAction, AppState, SignupPair, GroupMap, StoryDraft, ServerData } from './types';
+import type { Entry, Companion } from '../types';
+import type { EntryFields } from '../lib/api';
 
 function emptyPairDraft(): SignupPair {
-  return { country: '', nationality: [], date: '', name: '', expanded: false, place: '', note: '', emoji: '', photo: false };
+  return { id: crypto.randomUUID(), country: '', nationality: [], date: '', name: '', expanded: false, place: '', note: '', emoji: '', photoPath: '' };
+}
+
+// Server data replaces local state wholesale; an open person/detail keeps
+// pointing at the refreshed copy.
+function withServerData(state: AppState, d: ServerData): AppState {
+  const person = state.person ? d.friends.find((f) => f.id === state.person!.id) || { ...state.person, requestState: 'none' as const, status: 'not connected yet' } : null;
+  return { ...state, entries: d.entries, companions: d.companions, maps: d.maps, friends: d.friends, friendPosts: d.friendPosts, person };
 }
 
 export const initialState: AppState = {
+  authLoading: true,
+  authUserId: null,
   signedIn: false,
+  onboardingStep: 'done',
+  handleDraft: '',
+  handleError: '',
   tab: 'map',
   side: 0,
   dragX: 0,
 
-  profile: { name: '' },
+  profile: { name: '', handle: '' },
   entries: [],
   friendPosts: [],
   friends: [],
@@ -44,7 +57,6 @@ export const initialState: AppState = {
   commentDraft: '',
 
   friendQuery: '',
-  friendsOf: '',
   personBack: null,
   person: null,
 
@@ -70,7 +82,8 @@ function patchEntry(entries: Entry[], id: string, patch: Partial<Entry>): Entry[
 function buildStoryDraft(state: AppState, editId: string): StoryDraft {
   const e = editId ? state.entries.find((x) => x.id === editId) : undefined;
   return {
-    editId: editId || '',
+    editId: e ? e.id : crypto.randomUUID(),
+    isEdit: !!e,
     companionId: e?.companionId || '',
     mapId: e?.mapId || '',
     date: e && e.date ? e.date : today(),
@@ -81,17 +94,104 @@ function buildStoryDraft(state: AppState, editId: string): StoryDraft {
     country: e?.country || '',
     note: e?.note || '',
     emoji: e?.emoji || '',
-    photo: e ? !!e.photo : false,
+    photoPath: e?.photoPath || '',
     pub: e ? !!e.pub : true,
     hideName: e ? !!e.hideName : false,
     newCompanion: null,
   };
 }
 
+// What a published story writes to its entry. Exported so the publish handler
+// can send the exact same fields to the server that the reducer applies locally.
+export function storyFields(state: AppState, s: StoryDraft): EntryFields {
+  const companion = state.companions.find((c) => c.id === s.companionId);
+  return {
+    companionId: s.companionId,
+    mapId: s.mapId || undefined,
+    // The companion carries the name; the free-text column is only for legacy entries.
+    name: '',
+    date: s.date || today(),
+    country: s.beenIn ? s.country : '',
+    nationality: s.beenIn && companion ? companion.nationalities : [],
+    metDateNumber: s.met ? s.metDateNumber : undefined,
+    metDateLocation: s.met ? s.metDateLocation : undefined,
+    note: s.note || '',
+    emoji: s.emoji || '',
+    photoPath: s.photoPath,
+    pub: s.pub,
+    hideName: s.hideName,
+    city: '',
+    place: '',
+    placePub: false,
+    stub: false,
+  };
+}
+
+// The entries a backfill commit creates, one per pair (reusing each pair's id).
+// Exported so the commit handler can send the same rows to the server.
+export function signupStubs(state: AppState): Entry[] {
+  if (!state.signup) return [];
+  const mapScoped = !!(state.newMapDraft || state.mapBackfillFor);
+  return state.signup.pairs.map((p, i) => ({
+    id: p.id,
+    country: p.country,
+    nationality: mapScoped ? [] : natsOf(p.nationality),
+    city: '',
+    place: p.expanded ? p.place.trim() : '',
+    placePub: false,
+    date: p.date || '',
+    name: p.expanded ? '' : p.name || '',
+    note: p.expanded ? p.note : '',
+    emoji: p.expanded ? p.emoji : '',
+    photoPath: p.expanded ? p.photoPath : '',
+    pub: false,
+    stub: !p.expanded,
+    ord: 20000 + i,
+    when: 'backfilled',
+    kudos: [],
+    iK: false,
+    comments: [],
+  }));
+}
+
 export function reducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
-    case 'SIGN_IN':
-      return { ...state, signedIn: true, signup: { pairs: [] } };
+    case 'AUTH_CHECK_DONE':
+      // No active session.
+      return { ...state, authLoading: false, signedIn: false };
+
+    case 'HYDRATE_SESSION': {
+      const step = !action.handleSet ? 'handle' : !action.onboarded ? 'signup' : 'done';
+      return {
+        ...withServerData(state, action),
+        authLoading: false,
+        signedIn: true,
+        authUserId: action.userId,
+        profile: { ...state.profile, name: action.displayName, handle: action.handle },
+        onboardingStep: step,
+        handleDraft: '',
+        handleError: '',
+        signup: step === 'signup' ? { pairs: [] } : null,
+      };
+    }
+
+    case 'SYNC_FROM_SERVER':
+      return withServerData(state, action);
+
+    case 'SIGN_OUT':
+      return { ...initialState, authLoading: false };
+
+    case 'PATCH_HANDLE_DRAFT':
+      return { ...state, handleDraft: action.value, handleError: '' };
+
+    case 'SET_HANDLE':
+      return { ...state, profile: { ...state.profile, handle: action.handle }, onboardingStep: 'signup', signup: { pairs: [] }, handleDraft: '', handleError: '' };
+
+    case 'HANDLE_ERROR':
+      return { ...state, handleError: action.message };
+
+    case 'ONBOARDING_DONE':
+      return { ...state, onboardingStep: 'done' };
 
     case 'START_SIGNUP':
       return { ...state, signup: { pairs: [] }, pairDraft: emptyPairDraft(), mapBackfillFor: null };
@@ -121,31 +221,11 @@ export function reducer(state: AppState, action: AppAction): AppState {
 
     case 'COMMIT_SIGNUP': {
       if (!state.signup) return state;
-      const mapScoped = !!(state.newMapDraft || state.mapBackfillFor);
-      const stubs: Entry[] = state.signup.pairs.map((p, i) => ({
-        id: 'sp' + i + Date.now(),
-        country: p.country,
-        nationality: mapScoped ? [] : natsOf(p.nationality),
-        city: '',
-        place: p.expanded ? p.place.trim() : '',
-        placePub: false,
-        date: p.date || '',
-        name: p.expanded ? '' : p.name || '',
-        note: p.expanded ? p.note : '',
-        emoji: p.expanded ? p.emoji : '',
-        photo: p.expanded ? p.photo : false,
-        pub: false,
-        stub: !p.expanded,
-        ord: 20000 + i,
-        when: 'backfilled',
-        kudos: [],
-        iK: false,
-        comments: [],
-      }));
+      const stubs = signupStubs(state);
 
       if (state.newMapDraft) {
         const map: GroupMap = {
-          id: 'gm' + Date.now(),
+          id: state.newMapDraft.id,
           name: state.newMapDraft.name.trim() || 'Untitled map',
           nationalities: state.newMapDraft.nationalities,
           entries: stubs,
@@ -167,7 +247,7 @@ export function reducer(state: AppState, action: AppAction): AppState {
 
     case 'SKIP_SIGNUP': {
       if (state.newMapDraft) {
-        const map: GroupMap = { id: 'gm' + Date.now(), name: state.newMapDraft.name.trim() || 'Untitled map', nationalities: state.newMapDraft.nationalities, entries: [] };
+        const map: GroupMap = { id: state.newMapDraft.id, name: state.newMapDraft.name.trim() || 'Untitled map', nationalities: state.newMapDraft.nationalities, entries: [] };
         return { ...state, maps: [...state.maps, map], signup: null, newMapDraft: null, openMapId: map.id, overlay: null };
       }
       return { ...state, signup: null, mapBackfillFor: null };
@@ -212,45 +292,27 @@ export function reducer(state: AppState, action: AppAction): AppState {
       if (!state.story?.newCompanion) return state;
       const name = state.story.newCompanion.name.trim();
       if (!name) return state;
-      const companion: Companion = { id: 'c' + Date.now(), name, initials: initialsOf(name) || '??', nationalities: state.story.newCompanion.nationalities };
+      const companion: Companion = { id: action.id, name, initials: initialsOf(name) || '??', nationalities: state.story.newCompanion.nationalities };
       return { ...state, companions: [...state.companions, companion], story: { ...state.story, companionId: companion.id, newCompanion: null } };
     }
 
     case 'PUBLISH_STORY': {
       const s = state.story;
       if (!s || !s.companionId) return state;
-      const companion = state.companions.find((c) => c.id === s.companionId);
-      const base: Partial<Entry> = {
-        companionId: s.companionId,
-        name: companion?.name || '',
-        mapId: s.mapId || undefined,
-        date: s.date || today(),
-        country: s.beenIn ? s.country : '',
-        nationality: s.beenIn && companion ? companion.nationalities : [],
-        metDateNumber: s.met ? s.metDateNumber : undefined,
-        metDateLocation: s.met ? s.metDateLocation : undefined,
-        note: s.note || '',
-        emoji: s.emoji || '',
-        photo: s.photo,
-        pub: s.pub,
-        hideName: s.hideName,
-        place: '',
-        placePub: false,
-        stub: false,
-      };
-      if (s.editId) {
+      const base: Partial<Entry> = storyFields(state, s);
+      if (s.isEdit) {
         const next = { ...state, entries: patchEntry(state.entries, s.editId, base), story: null };
         return withToast(next, 'story updated.');
       }
       const entry: Entry = {
-        id: 'e' + Date.now(),
+        id: s.editId,
         city: '',
-        ord: -1,
+        ord: -Date.now(),
         when: 'just now',
         kudos: [],
         iK: false,
         comments: [],
-        country: '', nationality: [], date: today(), name: '', note: '', emoji: '', place: '', placePub: false, photo: false, pub: true, stub: false,
+        country: '', nationality: [], date: today(), name: '', note: '', emoji: '', place: '', placePub: false, photoPath: '', pub: true, stub: false,
         ...base,
       };
       const next = { ...state, entries: [entry, ...state.entries], story: null, tab: 'feed' as const, overlay: null };
@@ -261,7 +323,8 @@ export function reducer(state: AppState, action: AppAction): AppState {
       let seed: string[] = [];
       if (action.kind === 'signupNat') seed = state.pairDraft.nationality.slice();
       if (action.kind === 'mapNat') {
-        const openMap = state.openMapId ? state.maps.find((m) => m.id === state.openMapId) : undefined;
+        // The New map screen edits the draft even if another map is still open underneath.
+        const openMap = state.overlay !== 'newMap' && state.openMapId ? state.maps.find((m) => m.id === state.openMapId) : undefined;
         seed = openMap ? openMap.nationalities.slice() : state.newMapDraft?.nationalities.slice() || [];
       }
       if (action.kind === 'companionNat') seed = state.story?.newCompanion?.nationalities.slice() || [];
@@ -290,7 +353,7 @@ export function reducer(state: AppState, action: AppAction): AppState {
         return { ...state, pairDraft: { ...state.pairDraft, nationality: state.pickerDraft.slice() }, picker: null, pickerQuery: '', pickerDraft: [] };
       }
       if (state.picker === 'mapNat') {
-        if (state.openMapId) {
+        if (state.openMapId && state.overlay !== 'newMap') {
           const maps = state.maps.map((m) => (m.id === state.openMapId ? { ...m, nationalities: state.pickerDraft.slice() } : m));
           return { ...state, maps, picker: null, pickerQuery: '', pickerDraft: [] };
         }
@@ -366,59 +429,39 @@ export function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, detailOn: false };
 
     case 'OPEN_FRIENDS':
-      return { ...state, overlay: 'friends', friendsOf: action.friendsOf || '', friendQuery: '' };
+      return { ...state, overlay: 'friends', friendQuery: '' };
 
     case 'SET_FRIEND_QUERY':
       return { ...state, friendQuery: action.query };
 
     case 'OPEN_PERSON': {
-      const f = state.friends.find((x) => x.name === action.name) || {
-        name: action.name,
-        initials: initialsOf(action.name) || '??',
-        friends: 0,
-        status: 'not connected yet',
-        requestState: 'none' as const,
-        requestedAt: 0,
-      };
+      // Prefer the friends-list copy (it has the current request state).
+      const f = state.friends.find((x) => x.id === action.person.id) || action.person;
       return { ...state, person: f, personBack: state.overlay, overlay: 'person' };
     }
 
     case 'BACK_FROM_PERSON':
-      return { ...state, overlay: state.personBack === 'friends' ? 'friends' : null };
+      return { ...state, overlay: state.personBack === 'friends' || state.personBack === 'friendRequests' ? state.personBack : null };
 
     case 'SEND_FRIEND_REQUEST': {
       if (!state.person) return state;
-      const p = state.person;
-      const exists = state.friends.some((f) => f.name === p.name);
-      const friends = exists
-        ? state.friends.map((f) => (f.name === p.name ? { ...f, requestState: 'pending_out' as const, status: 'request sent' } : f))
-        : [...state.friends, { ...p, requestState: 'pending_out' as const, status: 'request sent', requestedAt: Date.now() }];
-      const next = { ...state, friends, person: { ...p, requestState: 'pending_out' as const, status: 'request sent' } };
-      return withToast(next, `request sent to ${p.name.split(' ')[0]}.`);
-    }
-
-    case 'SEND_FRIEND_REQUEST_BY_NAME': {
-      const name = action.name.trim();
-      if (!name) return state;
-      const already = state.friends.some((f) => f.name.toLowerCase() === name.toLowerCase());
-      if (already) return withToast(state, `${name} is already on your list.`);
-      const friend: Friend = { name, initials: initialsOf(name) || '??', friends: 0, status: 'request sent', requestState: 'pending_out', requestedAt: Date.now() };
-      return withToast({ ...state, friends: [...state.friends, friend] }, `request sent to ${name.split(' ')[0]}.`);
+      const p = { ...state.person, requestState: 'pending_out' as const, status: 'request sent', requestedAt: Date.now() };
+      const exists = state.friends.some((f) => f.id === p.id);
+      const friends = exists ? state.friends.map((f) => (f.id === p.id ? p : f)) : [...state.friends, p];
+      return withToast({ ...state, friends, person: p }, `request sent to ${p.name.split(' ')[0]}.`);
     }
 
     case 'APPROVE_FRIEND_REQUEST': {
-      const friends = state.friends.map((f) => (f.name === action.name ? { ...f, requestState: 'accepted' as const, status: 'friends since today' } : f));
-      const next = {
-        ...state,
-        friends,
-        person: state.person && state.person.name === action.name ? { ...state.person, requestState: 'accepted' as const, status: 'friends since today' } : state.person,
-      };
-      return withToast(next, `you and ${action.name.split(' ')[0]} are friends now.`);
+      const f = state.friends.find((x) => x.id === action.id);
+      const accept = <T extends { id: string }>(x: T) => (x.id === action.id ? { ...x, requestState: 'accepted' as const, status: 'friends since today' } : x);
+      const next = { ...state, friends: state.friends.map(accept), person: state.person ? accept(state.person) : null };
+      return withToast(next, f ? `you and ${f.name.split(' ')[0]} are friends now.` : 'friends now.');
     }
 
     case 'DECLINE_FRIEND_REQUEST': {
-      const friends = state.friends.filter((f) => f.name !== action.name);
-      return withToast({ ...state, friends }, 'request declined.');
+      const friends = state.friends.filter((f) => f.id !== action.id);
+      const person = state.person && state.person.id === action.id ? { ...state.person, requestState: 'none' as const, status: 'not connected yet' } : state.person;
+      return withToast({ ...state, friends, person }, 'request declined.');
     }
 
     case 'SET_PROFILE_NAME': {
@@ -432,7 +475,7 @@ export function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, overlay: 'friendRequests' };
 
     case 'CLOSE_OVERLAY':
-      return { ...state, overlay: null, sheet: null, friendsOf: '', addMapCountry: '' };
+      return { ...state, overlay: null, sheet: null, addMapCountry: '' };
 
     case 'OPEN_MINE_MENU': {
       const e = state.entries.find((x) => x.id === action.id);
@@ -544,7 +587,7 @@ export function reducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         overlay: 'newMap',
-        newMapDraft: { name: '', nationalities: [] },
+        newMapDraft: { id: crypto.randomUUID(), name: '', nationalities: [] },
         pairDraft: { ...emptyPairDraft(), country: state.addMapCountry || '' },
       };
 
@@ -579,26 +622,7 @@ export function reducer(state: AppState, action: AppAction): AppState {
     case 'ADD_ENTRY_TO_MAP': {
       const country = state.addMapCountry;
       if (!country) return state;
-      const entry: Entry = {
-        id: 'e' + Date.now(),
-        country,
-        nationality: [],
-        city: '',
-        date: today(),
-        name: '',
-        note: '',
-        emoji: '',
-        place: '',
-        placePub: false,
-        photo: false,
-        pub: false,
-        stub: true,
-        ord: -1,
-        when: 'just now',
-        kudos: [],
-        iK: false,
-        comments: [],
-      };
+      const entry = mapQuickEntry(action.id, country);
       const maps = state.maps.map((m) => (m.id === action.mapId ? { ...m, entries: [entry, ...m.entries] } : m));
       const map = maps.find((m) => m.id === action.mapId);
       const next = { ...state, maps, overlay: null, addMapCountry: '' };
@@ -608,6 +632,31 @@ export function reducer(state: AppState, action: AppAction): AppState {
     default:
       return state;
   }
+}
+
+// A bare "we've been here" country on a group map (from "Add to a map").
+// Exported so the caller sends the same row to the server.
+export function mapQuickEntry(id: string, country: string): Entry {
+  return {
+    id,
+    country,
+    nationality: [],
+    city: '',
+    date: today(),
+    name: '',
+    note: '',
+    emoji: '',
+    place: '',
+    placePub: false,
+    photoPath: '',
+    pub: false,
+    stub: true,
+    ord: -Date.now(),
+    when: 'just now',
+    kudos: [],
+    iK: false,
+    comments: [],
+  };
 }
 
 function withToast(state: AppState, message: string): AppState {

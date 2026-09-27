@@ -1,14 +1,17 @@
 import { useStore } from '../../state/store';
+import { useEntryActions } from '../../state/useEntryActions';
 import { flagOf } from '../../data/countries';
 import { fmtDate } from '../../data/format';
 import { ME_KEY } from '../../lib/identity';
 import { natLabel } from '../../state/selectors';
 import { OverlayHeader } from '../../ui/OverlayHeader';
 import { Avatar } from '../../ui/Avatar';
+import { EntryPhoto } from '../../ui/Photo';
 import { ThumbsUpIcon, LockIcon } from '../../ui/icons';
 
 export function PostDetailOverlay() {
   const { state, dispatch } = useStore();
+  const { toggleKudos, submitComment } = useEntryActions();
   if (!state.detailOn || !state.detailId) return null;
 
   const isFeed = state.detailKind === 'feed';
@@ -21,23 +24,25 @@ export function PostDetailOverlay() {
       <div className="noscroll" style={{ position: 'absolute', inset: 0, background: 'var(--cream-lighter)', zIndex: 45, overflowY: 'auto' }}>
         <OverlayHeader title="Post" onBack={close} />
         <div style={{ padding: '18px 20px 120px' }}>
-          <Header token={p.initials} who={p.who} headline={`stamped ${flagOf(p.country)} ${p.country}`} emoji={p.emoji} />
-          <PassportLine label={p.nationality} />
+          <Header token={p.initials} who={p.who} headline={p.country ? `stamped ${flagOf(p.country)} ${p.country}` : 'shared a story'} emoji={p.emoji} />
+          {p.nationality && <PassportLine label={p.nationality} />}
+          {p.companionName && <InfoLine label="With" value={p.companionName} />}
+          <MetLine num={p.metDateNumber} where={p.metDateLocation} />
           {p.place && <PlaceLine place={p.place} tag="shared" />}
           {p.note && <NoteLine note={p.note} />}
-          {p.photo && <PhotoBlock />}
-          <div style={{ font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 12 }}>{p.when}</div>
+          {p.photoPath && <PhotoBlock path={p.photoPath} />}
+          <div style={{ font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 12 }}>{p.date ? fmtDate(p.date) : p.when}</div>
           <KudosRow
             iK={p.iK}
             kudos={p.kudos}
-            onToggle={() => dispatch({ type: 'TOGGLE_KUDOS', kind: 'feed', id: p.id })}
+            onToggle={() => toggleKudos('feed', p.id)}
           />
           <CommentsBlock
             comments={p.comments}
             note={`stamps and comments here are visible to ${p.who.split(' ')[0]}’s friends only.`}
             commentDraft={state.commentDraft}
             onDraft={(t) => dispatch({ type: 'SET_COMMENT_DRAFT', text: t })}
-            onSubmit={() => dispatch({ type: 'SUBMIT_COMMENT' })}
+            onSubmit={submitComment}
           />
         </div>
       </div>
@@ -56,17 +61,10 @@ export function PostDetailOverlay() {
       <div style={{ padding: '18px 20px 120px' }}>
         <Header token={ME_KEY} who={state.profile.name.trim() || 'You'} headline={headline} emoji={e.emoji} />
         {e.nationality.length > 0 && <PassportLine label={natLabel(e)} />}
-        {(e.metDateNumber || e.metDateLocation) && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, color: 'var(--ink-body)' }}>
-            <span className="label">We met</span>
-            <span style={{ font: '400 14px/1.45 Inter, sans-serif' }}>
-              {[e.metDateNumber ? `date #${e.metDateNumber}` : '', e.metDateLocation].filter(Boolean).join(' · ')}
-            </span>
-          </div>
-        )}
+        <MetLine num={e.metDateNumber} where={e.metDateLocation} />
         {e.place && <PlaceLine place={e.place} tag={e.placePub && e.pub ? 'shared' : 'private'} />}
         {e.note && <NoteLine note={e.note} />}
-        {e.photo && <PhotoBlock />}
+        {e.photoPath && <PhotoBlock path={e.photoPath} />}
         {nameHidden ? (
           <div
             style={{
@@ -87,15 +85,10 @@ export function PostDetailOverlay() {
             </span>
           </div>
         ) : (
-          personName && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, color: 'var(--ink-body)' }}>
-              <span className="label">With</span>
-              <span style={{ font: '500 14px/1.3 Inter, sans-serif' }}>{personName}</span>
-            </div>
-          )
+          personName && <InfoLine label="With" value={personName} />
         )}
         <div style={{ font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 12 }}>{e.date ? fmtDate(e.date) : e.when}</div>
-        <KudosRow iK={e.iK} kudos={e.kudos} onToggle={() => dispatch({ type: 'TOGGLE_KUDOS', kind: 'mine', id: e.id })} />
+        <KudosRow iK={e.iK} kudos={e.kudos} onToggle={() => toggleKudos('mine', e.id)} />
         <CommentsBlock
           comments={e.comments}
           note={
@@ -107,7 +100,7 @@ export function PostDetailOverlay() {
           }
           commentDraft={state.commentDraft}
           onDraft={(t) => dispatch({ type: 'SET_COMMENT_DRAFT', text: t })}
-          onSubmit={() => dispatch({ type: 'SUBMIT_COMMENT' })}
+          onSubmit={submitComment}
         />
       </div>
     </div>
@@ -153,21 +146,29 @@ function NoteLine({ note }: { note: string }) {
   return <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontWeight: 400, fontSize: 21, lineHeight: 1.4, marginTop: 12 }}>“{note}”</div>;
 }
 
-function PhotoBlock() {
+function InfoLine({ label, value }: { label: string; value: string }) {
   return (
-    <div
-      style={{
-        marginTop: 14,
-        height: 200,
-        borderRadius: 14,
-        border: '1px solid var(--stone)',
-        backgroundImage: 'repeating-linear-gradient(135deg, rgba(226,114,91,.1) 0 7px, transparent 7px 14px)',
-        display: 'flex',
-        alignItems: 'flex-end',
-        padding: 10,
-      }}
-    >
-      <span style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 10, color: 'var(--ink-body)', background: 'var(--cream-lighter)', borderRadius: 4, padding: '3px 6px' }}>photo</span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, color: 'var(--ink-body)' }}>
+      <span className="label">{label}</span>
+      <span style={{ font: '500 14px/1.3 Inter, sans-serif' }}>{value}</span>
+    </div>
+  );
+}
+
+function MetLine({ num, where }: { num?: string; where?: string }) {
+  if (!num && !where) return null;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, color: 'var(--ink-body)' }}>
+      <span className="label">We met</span>
+      <span style={{ font: '400 14px/1.45 Inter, sans-serif' }}>{[num ? `date #${num}` : '', where].filter(Boolean).join(' · ')}</span>
+    </div>
+  );
+}
+
+function PhotoBlock({ path }: { path: string }) {
+  return (
+    <div style={{ marginTop: 14 }}>
+      <EntryPhoto path={path} height={260} />
     </div>
   );
 }

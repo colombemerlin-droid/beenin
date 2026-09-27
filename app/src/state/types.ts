@@ -6,7 +6,11 @@ export interface NewCompanionDraft {
 }
 
 export interface StoryDraft {
+  // Always set: the existing entry's id when editing, or a fresh UUID for a new
+  // story (assigned when the draft opens, so publish — and a photo upload before
+  // publish — reuse it for the server row).
   editId: string;
+  isEdit: boolean;
   companionId: string;
   mapId: string;
   date: string;
@@ -17,13 +21,16 @@ export interface StoryDraft {
   country: string;
   note: string;
   emoji: string;
-  photo: boolean;
+  photoPath: string;
   pub: boolean;
   hideName: boolean;
   newCompanion: NewCompanionDraft | null;
 }
 
 export interface SignupPair {
+  // Assigned when the row is drafted, so a photo can upload before commit and
+  // the committed entry reuses the same id.
+  id: string;
   country: string;
   nationality: string[];
   date: string;
@@ -34,7 +41,7 @@ export interface SignupPair {
   place: string;
   note: string;
   emoji: string;
-  photo: boolean;
+  photoPath: string;
 }
 
 export interface SignupState {
@@ -49,6 +56,7 @@ export interface GroupMap {
 }
 
 export interface NewMapDraft {
+  id: string; // assigned up front so the commit and the server row share it
   name: string;
   nationalities: string[];
 }
@@ -74,10 +82,30 @@ export interface SheetState {
 
 export interface Profile {
   name: string;
+  handle: string;
+}
+
+export type OnboardingStep = 'handle' | 'signup' | 'done';
+
+// Everything the account holds on the server, as the viewer sees it.
+export interface ServerData {
+  entries: Entry[];
+  companions: Companion[];
+  maps: GroupMap[];
+  friends: Friend[];
+  friendPosts: FriendPost[];
 }
 
 export interface AppState {
+  // True only while the initial Supabase session check is in flight (app boot).
+  authLoading: boolean;
+  authUserId: string | null;
   signedIn: boolean;
+  // Where a signed-in user is in first-run onboarding: pick a handle, then
+  // run the country-backfill (signup) flow, then done. Irrelevant once 'done'.
+  onboardingStep: OnboardingStep;
+  handleDraft: string;
+  handleError: string;
   tab: TabKind;
   side: 0 | 1;
   dragX: number;
@@ -116,7 +144,6 @@ export interface AppState {
   commentDraft: string;
 
   friendQuery: string;
-  friendsOf: string;
   personBack: OverlayKind;
   person: Friend | null;
 
@@ -130,7 +157,22 @@ export interface AppState {
 }
 
 export type AppAction =
-  | { type: 'SIGN_IN' }
+  | { type: 'AUTH_CHECK_DONE' }
+  | ({
+      type: 'HYDRATE_SESSION';
+      userId: string;
+      displayName: string;
+      handle: string;
+      handleSet: boolean;
+      onboarded: boolean;
+    } & ServerData)
+  // A background refresh (tab switch, app refocus) — replaces server-backed data only.
+  | ({ type: 'SYNC_FROM_SERVER' } & ServerData)
+  | { type: 'SIGN_OUT' }
+  | { type: 'PATCH_HANDLE_DRAFT'; value: string }
+  | { type: 'SET_HANDLE'; handle: string }
+  | { type: 'HANDLE_ERROR'; message: string }
+  | { type: 'ONBOARDING_DONE' }
   | { type: 'START_SIGNUP' }
   | { type: 'PATCH_PAIR_DRAFT'; patch: Partial<SignupPair> }
   | { type: 'TOGGLE_PAIR_EXPANDED' }
@@ -147,7 +189,7 @@ export type AppAction =
   | { type: 'PUBLISH_STORY' }
   | { type: 'OPEN_NEW_COMPANION' }
   | { type: 'PATCH_NEW_COMPANION'; patch: Partial<NewCompanionDraft> }
-  | { type: 'SAVE_NEW_COMPANION' }
+  | { type: 'SAVE_NEW_COMPANION'; id: string }
   | { type: 'CANCEL_NEW_COMPANION' }
   | { type: 'OPEN_PICKER'; kind: PickerKind }
   | { type: 'SET_PICKER_QUERY'; query: string }
@@ -163,14 +205,14 @@ export type AppAction =
   | { type: 'SUBMIT_COMMENT' }
   | { type: 'OPEN_DETAIL'; kind: DetailKind; id: string }
   | { type: 'CLOSE_DETAIL' }
-  | { type: 'OPEN_FRIENDS'; friendsOf?: string }
+  | { type: 'OPEN_FRIENDS' }
   | { type: 'SET_FRIEND_QUERY'; query: string }
-  | { type: 'OPEN_PERSON'; name: string }
+  // `person` is a friend from state, or a profile found by handle search.
+  | { type: 'OPEN_PERSON'; person: Friend }
   | { type: 'BACK_FROM_PERSON' }
   | { type: 'SEND_FRIEND_REQUEST' }
-  | { type: 'SEND_FRIEND_REQUEST_BY_NAME'; name: string }
-  | { type: 'APPROVE_FRIEND_REQUEST'; name: string }
-  | { type: 'DECLINE_FRIEND_REQUEST'; name: string }
+  | { type: 'APPROVE_FRIEND_REQUEST'; id: string }
+  | { type: 'DECLINE_FRIEND_REQUEST'; id: string }
   | { type: 'SET_PROFILE_NAME'; name: string }
   | { type: 'OPEN_HISTORY' }
   | { type: 'OPEN_FRIEND_REQUESTS' }
@@ -191,6 +233,6 @@ export type AppAction =
   | { type: 'CLOSE_MAP' }
   | { type: 'PATCH_MAP_RENAME'; name: string }
   | { type: 'SAVE_MAP_RENAME' }
-  | { type: 'ADD_ENTRY_TO_MAP'; mapId: string };
+  | { type: 'ADD_ENTRY_TO_MAP'; mapId: string; id: string };
 
 export type { Entry, FriendPost, Friend, Comment, Companion };

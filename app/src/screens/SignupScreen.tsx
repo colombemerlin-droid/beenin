@@ -1,8 +1,11 @@
 import { useStore } from '../state/store';
+import { signupStubs } from '../state/reducer';
+import * as api from '../lib/api';
 import { flagOf } from '../data/countries';
 import { fmtDate } from '../data/format';
 import { Picker, inputStyle, primaryBtnStyle } from '../ui/Picker';
 import { fieldBtnStyle } from '../ui/formKit';
+import { PhotoField } from '../ui/Photo';
 
 export function SignupScreen() {
   const { state, dispatch } = useStore();
@@ -13,6 +16,35 @@ export function SignupScreen() {
   const canAdd = mapScoped ? !!d.country : !!(d.country && d.nationality.length);
   const count = g.pairs.length;
   const mapName = state.newMapDraft?.name || state.maps.find((m) => m.id === state.mapBackfillFor)?.name;
+
+  const fail = () => dispatch({ type: 'SHOW_TOAST', message: "couldn't save that to your account — try again in a moment." });
+
+  // A brand-new map (from New map → Continue) is created on the server on
+  // Done or Skip, before any of its countries.
+  function createNewMap() {
+    const m = state.newMapDraft;
+    if (!m || !state.authUserId) return;
+    api.createMap(state.authUserId, { id: m.id, name: m.name.trim() || 'Untitled map', nationalities: m.nationalities }).catch(fail);
+  }
+
+  function commit() {
+    const stubs = signupStubs(state);
+    const mapId = state.newMapDraft?.id || state.mapBackfillFor || undefined;
+    createNewMap();
+    dispatch({ type: 'COMMIT_SIGNUP' });
+    if (!state.authUserId || !stubs.length) return;
+    api
+      .createEntries(
+        state.authUserId,
+        stubs.map((e) => ({ id: e.id, fields: mapId ? { ...e, mapId, mapNative: true } : e }))
+      )
+      .catch(fail);
+  }
+
+  function skip() {
+    createNewMap();
+    dispatch({ type: 'SKIP_SIGNUP' });
+  }
 
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 26, background: 'var(--cream-lighter)', display: 'flex', flexDirection: 'column' }}>
@@ -125,25 +157,7 @@ export function SignupScreen() {
                   </span>
                 </button>
               </div>
-              <button
-                onClick={() => dispatch({ type: 'PATCH_PAIR_DRAFT', patch: { photo: !d.photo } })}
-                style={{
-                  width: '100%',
-                  height: 64,
-                  borderRadius: 10,
-                  border: '1px solid var(--stone)',
-                  backgroundColor: 'var(--paper)',
-                  backgroundImage: d.photo ? 'repeating-linear-gradient(135deg, rgba(226,114,91,.12) 0 7px, transparent 7px 14px)' : 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--ink-body)',
-                  font: '500 12px/1 Inter, sans-serif',
-                }}
-              >
-                {d.photo ? 'photo attached · tap to remove' : 'tap to add a photo'}
-              </button>
+              <PhotoField entryId={d.id} path={d.photoPath} onChange={(photoPath) => dispatch({ type: 'PATCH_PAIR_DRAFT', patch: { photoPath } })} />
               <div style={{ font: '400 12px/1.5 Inter, sans-serif', color: 'var(--ink-40)' }}>
                 Backfilled entries stay private — map and history only.
               </div>
@@ -187,13 +201,13 @@ export function SignupScreen() {
       </div>
 
       <div style={{ flex: 'none', padding: '12px 20px 34px', borderTop: '1px solid var(--stone)', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <button onClick={() => dispatch({ type: 'SKIP_SIGNUP' })} style={{ padding: '14px 16px', borderRadius: 8, border: 0, background: 'transparent', color: 'var(--ink-body)', font: '500 14px/1 Inter, sans-serif', cursor: 'pointer' }}>
+        <button onClick={skip} style={{ padding: '14px 16px', borderRadius: 8, border: 0, background: 'transparent', color: 'var(--ink-body)', font: '500 14px/1 Inter, sans-serif', cursor: 'pointer' }}>
           Skip
         </button>
         <span style={{ flex: 1, font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)', textAlign: 'right' }}>
           {count ? `${count} on the record` : 'nothing added yet'}
         </span>
-        <button onClick={() => dispatch({ type: 'COMMIT_SIGNUP' })} style={primaryBtnStyle}>
+        <button onClick={commit} style={primaryBtnStyle}>
           Done
         </button>
       </div>

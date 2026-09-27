@@ -116,7 +116,7 @@ export function notificationFeed(state: AppState): NotificationItem[] {
   state.entries.forEach((e) => {
     e.kudos.forEach((initials, i) => {
       if (initials === ME_KEY) return;
-      items.push({ kind: 'kudos', id: `k-${e.id}-${i}`, entryId: e.id, who: initials, initials, country: e.country, ord: e.ord });
+      items.push({ kind: 'kudos', id: `k-${e.id}-${i}`, entryId: e.id, who: e.kudosBy?.[i] || initials, initials, country: e.country, ord: e.ord });
     });
     e.comments.forEach((c, i) => {
       if (c.initials === ME_KEY) return;

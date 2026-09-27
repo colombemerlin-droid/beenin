@@ -4,6 +4,7 @@ import { pct } from '../data/countries';
 import { beenCountries, natCountries } from '../state/selectors';
 import { initialsOf } from '../lib/identity';
 import { ChevronRightIcon, TabProfileIcon } from '../ui/icons';
+import * as api from '../lib/api';
 
 export function ProfileScreen() {
   const { state, dispatch } = useStore();
@@ -20,8 +21,10 @@ export function ProfileScreen() {
     setEditing(true);
   }
   function save() {
-    dispatch({ type: 'SET_PROFILE_NAME', name: draft.trim() });
+    const name = draft.trim();
+    dispatch({ type: 'SET_PROFILE_NAME', name });
     setEditing(false);
+    if (state.authUserId) api.updateDisplayName(state.authUserId, name).catch(() => {});
   }
 
   return (
@@ -112,6 +115,10 @@ export function ProfileScreen() {
       <button onClick={() => dispatch({ type: 'START_SIGNUP' })} style={{ ...navRowStyle, marginTop: 10 }}>
         <span style={{ flex: 1, font: '600 17px/1.3 Inter, sans-serif' }}>Backfill your collection</span>
         <ChevronRightIcon size={19} color="#A39A92" />
+      </button>
+
+      <button onClick={() => api.signOut().catch(() => {})} style={{ ...navRowStyle, marginTop: 10, boxShadow: 'none', background: 'transparent', justifyContent: 'center' }}>
+        <span style={{ font: '600 14px/1.3 Inter, sans-serif', color: 'var(--ink-40)' }}>Sign out</span>
       </button>
     </div>
   );
