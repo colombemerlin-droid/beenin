@@ -1,0 +1,10 @@
+# The deployable app lives in app/ (the Vercel project's Root Directory).
+# Upload only that — not the design handoff, chats, docs or migrations.
+/*
+!/app
+/app/node_modules
+/app/dist
+/app/.env*
+!/app/.env.example
+/app/been-in-static-export*
+/app/export-html
