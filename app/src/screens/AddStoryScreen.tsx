@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useStore } from '../state/store';
 import { storyFields } from '../state/reducer';
 import * as api from '../lib/api';
@@ -14,38 +14,45 @@ import { CheckIcon } from '../ui/icons';
 export function AddStoryScreen() {
   const { state, dispatch } = useStore();
   const s = state.story;
-  const [query, setQuery] = useState('');
   if (!s) return null;
 
   const companion = state.companions.find((c) => c.id === s.companionId);
-  const q = query.trim().toLowerCase();
+  const typed = s.personQuery.trim();
+  const q = typed.toLowerCase();
   const matches = q ? state.companions.filter((c) => c.name.toLowerCase().includes(q)) : state.companions;
-  const canPublish = !!s.companionId;
+  // Typing someone's exact name counts as picking them; anything else is a new person.
+  const exact = q ? state.companions.find((c) => c.name.trim().toLowerCase() === q) : undefined;
+  const isNew = !companion && !!typed && !exact;
+  const canPublish = !!(companion || exact) || isNew;
   const userId = state.authUserId;
 
-  function saveCompanion() {
-    if (!s || !s.newCompanion) return;
-    const name = s.newCompanion.name.trim();
-    if (!name) return;
-    const id = crypto.randomUUID();
-    dispatch({ type: 'SAVE_NEW_COMPANION', id });
-    if (userId) {
-      api
-        .createCompanion(userId, { id, name, initials: initialsOf(name) || '??', nationalities: s.newCompanion.nationalities })
-        .catch(() => dispatch({ type: 'SHOW_TOAST', message: "couldn't save that person to your account — they're on this device only." }));
-    }
+  function pick(id: string) {
+    dispatch({ type: 'PATCH_STORY', patch: { companionId: id, personQuery: '', newPersonNats: [] } });
   }
 
   async function publish() {
     if (!s || !canPublish) return;
-    const fields = storyFields(state, s);
+    let who = companion || exact;
+    let known = state.companions;
+    if (!who) {
+      // A name that matches no one becomes a new person, created with the story.
+      who = { id: crypto.randomUUID(), name: typed, initials: initialsOf(typed) || '??', nationalities: s.newPersonNats };
+      known = [...known, who];
+      dispatch({ type: 'ADD_COMPANION', companion: who });
+      if (userId) {
+        api.createCompanion(userId, who).catch(() => dispatch({ type: 'SHOW_TOAST', message: "couldn't save that person to your account." }));
+      }
+    } else if (!companion) {
+      dispatch({ type: 'PATCH_STORY', patch: { companionId: who.id } });
+    }
+    const fields = storyFields({ ...state, companions: known }, { ...s, companionId: who.id });
     dispatch({ type: 'PUBLISH_STORY' });
     if (!userId) return;
     try {
       if (s.isEdit) await api.updateEntry(s.editId, fields);
       else await api.createEntry(userId, s.editId, fields);
     } catch {
-      dispatch({ type: 'SHOW_TOAST', message: "couldn't save that to your account — it's on this device only." });
+      dispatch({ type: 'SHOW_TOAST', message: "couldn't save that to your account — try again." });
     }
   }
 
@@ -73,70 +80,28 @@ export function AddStoryScreen() {
               Change
             </button>
           </div>
-        ) : s.newCompanion ? (
-          <div style={{ marginTop: 12, padding: 14, borderRadius: 14, background: 'var(--cream)' }}>
-            <div className="label" style={{ marginBottom: 6 }}>
-              Name
-            </div>
-            <input
-              autoFocus
-              value={s.newCompanion.name}
-              onChange={(e) => dispatch({ type: 'PATCH_NEW_COMPANION', patch: { name: e.target.value } })}
-              style={{ ...inputStyle, padding: 14 }}
-            />
-            <div className="label" style={{ margin: '14px 0 8px' }}>
-              Passport · one or more
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {s.newCompanion.nationalities.map((n) => (
-                <span key={n} style={chipStyle}>
-                  <span style={{ fontSize: 14, lineHeight: 1 }}>{natFlagOf(n)}</span>
-                  <span>{n}</span>
-                </span>
-              ))}
-              <button onClick={() => dispatch({ type: 'OPEN_PICKER', kind: 'companionNat' })} style={dashedChipStyle}>
-                {s.newCompanion.nationalities.length ? '+ Another' : '+ Passport'}
-              </button>
-            </div>
-            <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-              <button onClick={() => dispatch({ type: 'CANCEL_NEW_COMPANION' })} style={cancelBtnStyle}>
-                Cancel
-              </button>
-              <button
-                onClick={saveCompanion}
-                disabled={!s.newCompanion.name.trim()}
-                style={{ ...saveBtnStyle, opacity: s.newCompanion.name.trim() ? 1 : 0.4 }}
-              >
-                Save person
-              </button>
-            </div>
-          </div>
         ) : (
           <div style={{ marginTop: 12 }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="search who you've logged"
-                style={{ ...inputStyle, flex: 1 }}
-              />
-              <button onClick={() => dispatch({ type: 'OPEN_NEW_COMPANION' })} style={newPersonBtnStyle}>
-                +
-              </button>
-            </div>
-            {matches.length > 0 ? (
+            <input
+              value={s.personQuery}
+              onChange={(e) => dispatch({ type: 'PATCH_STORY', patch: { personQuery: e.target.value } })}
+              placeholder={state.companions.length ? 'type a name, or pick someone below' : 'their name'}
+              autoCapitalize="words"
+              style={inputStyle}
+            />
+            {matches.length > 0 && (
               <div style={{ marginTop: 8, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--stone)' }}>
                 {matches.map((c) => (
                   <button
                     key={c.id}
-                    onClick={() => dispatch({ type: 'PATCH_STORY', patch: { companionId: c.id } })}
+                    onClick={() => pick(c.id)}
                     style={{
                       width: '100%',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 10,
                       padding: 12,
-                      background: 'var(--paper)',
+                      background: c === exact ? 'var(--coral-tint)' : 'var(--paper)',
                       border: 0,
                       borderBottom: '1px solid var(--stone)',
                       cursor: 'pointer',
@@ -149,10 +114,30 @@ export function AddStoryScreen() {
                   </button>
                 ))}
               </div>
-            ) : (
-              <div style={{ font: '400 13px/1.5 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 10 }}>
-                {state.companions.length === 0 ? 'Nobody logged yet — tap + to add someone.' : `No one matches "${query}".`}
+            )}
+            {isNew && (
+              <div style={{ marginTop: 10, padding: 14, borderRadius: 14, background: 'var(--cream)' }}>
+                <div style={{ font: '400 13px/1.45 Inter, sans-serif', color: 'var(--ink-body)' }}>
+                  New person: <b style={{ fontWeight: 600, color: 'var(--ink)' }}>{typed}</b>
+                </div>
+                <div className="label" style={{ margin: '12px 0 8px' }}>
+                  Their passport · one or more
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {s.newPersonNats.map((n) => (
+                    <span key={n} style={chipStyle}>
+                      <span style={{ fontSize: 14, lineHeight: 1 }}>{natFlagOf(n)}</span>
+                      <span>{n}</span>
+                    </span>
+                  ))}
+                  <button onClick={() => dispatch({ type: 'OPEN_PICKER', kind: 'companionNat' })} style={dashedChipStyle}>
+                    {s.newPersonNats.length ? '+ Another' : '+ Passport'}
+                  </button>
+                </div>
               </div>
+            )}
+            {!typed && state.companions.length === 0 && (
+              <div style={{ font: '400 13px/1.5 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 10 }}>Nobody logged yet — type their name.</div>
             )}
           </div>
         )}
@@ -355,38 +340,8 @@ const changeBtnStyle = {
   font: '500 12px/1 Inter, sans-serif',
 } as const;
 
-const cancelBtnStyle = {
-  flex: 1,
-  padding: 12,
-  borderRadius: 8,
-  border: '1px solid var(--stone)',
-  background: 'transparent',
-  color: 'var(--ink-body)',
-  cursor: 'pointer',
-  font: '600 14px/1 Inter, sans-serif',
-} as const;
 
-const saveBtnStyle = {
-  flex: 1,
-  padding: 12,
-  borderRadius: 8,
-  border: 0,
-  background: 'var(--coral)',
-  color: '#FFF8F2',
-  cursor: 'pointer',
-  font: '600 14px/1 Inter, sans-serif',
-} as const;
 
-const newPersonBtnStyle = {
-  width: 48,
-  flex: 'none',
-  borderRadius: 8,
-  border: '1px dashed var(--stone-dashed)',
-  background: 'transparent',
-  color: 'var(--coral-dark)',
-  cursor: 'pointer',
-  font: '700 20px/1 Inter, sans-serif',
-} as const;
 
 const mapChipBase = {
   padding: '9px 15px',

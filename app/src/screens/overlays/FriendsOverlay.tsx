@@ -4,7 +4,7 @@ import * as api from '../../lib/api';
 import { OverlayHeader } from '../../ui/OverlayHeader';
 import { Avatar } from '../../ui/Avatar';
 import { EmptyState } from '../../ui/EmptyState';
-import { ChevronRightIcon } from '../../ui/icons';
+import { ChevronRightIcon, DotsIcon } from '../../ui/icons';
 import { ShareHandle } from '../../ui/ShareHandle';
 import type { Friend } from '../../types';
 
@@ -83,7 +83,7 @@ export function FriendsOverlay() {
               Requested
             </div>
             {requested.map((f) => (
-              <PersonRow key={f.id} f={f} sub="waiting for them to accept" />
+              <PersonRow key={f.id} f={f} sub="waiting for them to accept" menu />
             ))}
           </>
         )}
@@ -104,27 +104,39 @@ export function FriendsOverlay() {
         ) : list.length === 0 ? (
           <div style={{ ...hintStyle, textAlign: 'center' }}>No one matches “{state.friendQuery}”.</div>
         ) : (
-          list.map((f) => <PersonRow key={f.id} f={f} sub={f.status} />)
+          list.map((f) => <PersonRow key={f.id} f={f} sub={f.status} menu />)
         )}
       </div>
     </div>
   );
 }
 
-function PersonRow({ f, sub }: { f: Friend; sub: string }) {
+// `menu` adds a ⋯ button (remove a friend / cancel a request) beside the row.
+function PersonRow({ f, sub, menu = false }: { f: Friend; sub: string; menu?: boolean }) {
   const { dispatch } = useStore();
   return (
-    <button
-      onClick={() => dispatch({ type: 'OPEN_PERSON', person: f })}
-      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 8px', background: 'transparent', border: 0, borderRadius: 14, cursor: 'pointer', textAlign: 'left', color: 'var(--ink)' }}
-    >
-      <Avatar token={f.initials} size={40} />
-      <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: 'block', font: '600 15px/1.3 Inter, sans-serif' }}>{f.name}</span>
-        <span style={{ display: 'block', font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 2 }}>{sub}</span>
-      </span>
-      <ChevronRightIcon size={18} color="#A39A92" />
-    </button>
+    <div style={{ display: 'flex', alignItems: 'center' }}>
+      <button
+        onClick={() => dispatch({ type: 'OPEN_PERSON', person: f })}
+        style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 8px', background: 'transparent', border: 0, borderRadius: 14, cursor: 'pointer', textAlign: 'left', color: 'var(--ink)' }}
+      >
+        <Avatar token={f.initials} size={40} />
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ display: 'block', font: '600 15px/1.3 Inter, sans-serif' }}>{f.name}</span>
+          <span style={{ display: 'block', font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 2 }}>{sub}</span>
+        </span>
+        {!menu && <ChevronRightIcon size={18} color="#A39A92" />}
+      </button>
+      {menu && (
+        <button
+          onClick={() => dispatch({ type: 'OPEN_FRIEND_MENU', id: f.id })}
+          aria-label={`Options for ${f.name}`}
+          style={{ width: 40, height: 40, flex: 'none', background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--ink-40)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <DotsIcon />
+        </button>
+      )}
+    </div>
   );
 }
 

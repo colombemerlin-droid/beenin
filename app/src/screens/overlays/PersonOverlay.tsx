@@ -100,6 +100,12 @@ export function PersonOverlay() {
                 </button>
               ))}
             </div>
+            <button
+              onClick={() => dispatch({ type: 'OPEN_FRIEND_MENU', id: p.id })}
+              style={{ display: 'block', margin: '28px auto 0', padding: 10, background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--ink-40)', font: '600 13px/1 Inter, sans-serif' }}
+            >
+              Remove friend
+            </button>
           </>
         )}
       </div>

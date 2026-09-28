@@ -1,7 +1,7 @@
 import { today } from '../data/format';
-import { ME_KEY, initialsOf } from '../lib/identity';
+import { ME_KEY } from '../lib/identity';
 import type { AppAction, AppState, SignupPair, GroupMap, StoryDraft, ServerData } from './types';
-import type { Entry, Companion } from '../types';
+import type { Entry } from '../types';
 import type { EntryFields } from '../lib/api';
 
 function emptyPairDraft(): SignupPair {
@@ -97,7 +97,8 @@ function buildStoryDraft(state: AppState, editId: string): StoryDraft {
     photoPath: e?.photoPath || '',
     pub: e ? !!e.pub : true,
     hideName: e ? !!e.hideName : false,
-    newCompanion: null,
+    personQuery: '',
+    newPersonNats: [],
   };
 }
 
@@ -274,27 +275,13 @@ export function reducer(state: AppState, action: AppAction): AppState {
     case 'CLOSE_STORY':
       return { ...state, story: null };
 
-    case 'OPEN_NEW_COMPANION': {
+    case 'ADD_COMPANION': {
       if (!state.story) return state;
-      return { ...state, story: { ...state.story, newCompanion: { name: '', nationalities: [] } } };
-    }
-
-    case 'PATCH_NEW_COMPANION': {
-      if (!state.story?.newCompanion) return state;
-      return { ...state, story: { ...state.story, newCompanion: { ...state.story.newCompanion, ...action.patch } } };
-    }
-
-    case 'CANCEL_NEW_COMPANION': {
-      if (!state.story) return state;
-      return { ...state, story: { ...state.story, newCompanion: null } };
-    }
-
-    case 'SAVE_NEW_COMPANION': {
-      if (!state.story?.newCompanion) return state;
-      const name = state.story.newCompanion.name.trim();
-      if (!name) return state;
-      const companion: Companion = { id: action.id, name, initials: initialsOf(name) || '??', nationalities: state.story.newCompanion.nationalities };
-      return { ...state, companions: [...state.companions, companion], story: { ...state.story, companionId: companion.id, newCompanion: null } };
+      return {
+        ...state,
+        companions: [...state.companions, action.companion],
+        story: { ...state.story, companionId: action.companion.id, personQuery: '', newPersonNats: [] },
+      };
     }
 
     case 'PUBLISH_STORY': {
@@ -328,7 +315,7 @@ export function reducer(state: AppState, action: AppAction): AppState {
         const openMap = state.overlay !== 'newMap' && state.openMapId ? state.maps.find((m) => m.id === state.openMapId) : undefined;
         seed = openMap ? openMap.nationalities.slice() : state.newMapDraft?.nationalities.slice() || [];
       }
-      if (action.kind === 'companionNat') seed = state.story?.newCompanion?.nationalities.slice() || [];
+      if (action.kind === 'companionNat') seed = state.story?.newPersonNats.slice() || [];
       return { ...state, picker: action.kind, pickerQuery: '', pickerDraft: seed };
     }
 
@@ -362,10 +349,10 @@ export function reducer(state: AppState, action: AppAction): AppState {
           return { ...state, newMapDraft: { ...state.newMapDraft, nationalities: state.pickerDraft.slice() }, picker: null, pickerQuery: '', pickerDraft: [] };
         }
       }
-      if (state.picker === 'companionNat' && state.story?.newCompanion) {
+      if (state.picker === 'companionNat' && state.story) {
         return {
           ...state,
-          story: { ...state.story, newCompanion: { ...state.story.newCompanion, nationalities: state.pickerDraft.slice() } },
+          story: { ...state.story, newPersonNats: state.pickerDraft.slice() },
           picker: null,
           pickerQuery: '',
           pickerDraft: [],
@@ -514,6 +501,20 @@ export function reducer(state: AppState, action: AppAction): AppState {
       };
     }
 
+    case 'OPEN_FRIEND_MENU': {
+      const f = state.friends.find((x) => x.id === action.id);
+      if (!f) return state;
+      const pending = f.requestState === 'pending_out';
+      return {
+        ...state,
+        sheet: {
+          title: pending ? `Request to ${f.name}` : `${f.name} · @${f.handle}`,
+          actions: [{ label: pending ? 'Cancel request' : 'Remove friend', color: '#B23B2A', kind: 'unfriend' }],
+        },
+        sheetTarget: f.id,
+      };
+    }
+
     case 'OPEN_MAP_MENU': {
       const m = state.maps.find((x) => x.id === action.mapId);
       if (!m) return state;
@@ -535,6 +536,16 @@ export function reducer(state: AppState, action: AppAction): AppState {
       const id = state.sheetTarget;
       const cleared = { ...state, sheet: null };
       if (action.kind === 'report') return withToast(cleared, 'reported. we’ll take it from here — quietly.');
+      if (action.kind === 'unfriend') {
+        // Friendship is one shared link: removing it unlinks both sides at once.
+        // Their posts leave your feed (and yours leave theirs); reconnecting
+        // takes a fresh request and accept.
+        const f = cleared.friends.find((x) => x.id === id);
+        const person = cleared.person && cleared.person.id === id ? { ...cleared.person, requestState: 'none' as const, status: 'not connected yet' } : cleared.person;
+        const next = { ...cleared, friends: cleared.friends.filter((x) => x.id !== id), friendPosts: cleared.friendPosts.filter((p) => p.ownerId !== id), person };
+        if (f?.requestState === 'pending_out') return withToast(next, 'request cancelled.');
+        return withToast(next, f ? `removed ${f.name.split(' ')[0]}. you can always send a new request.` : 'removed.');
+      }
       if (action.kind === 'edit') {
         return { ...cleared, overlay: null, story: buildStoryDraft(cleared, id) };
       }

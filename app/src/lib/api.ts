@@ -344,7 +344,10 @@ export function addKudos(entryId: string, userId: string): Promise<void> {
   return track(
     (async () => {
       await ready(entryId);
-      const { error } = await supabase.from('kudos').insert({ entry_id: entryId, user_id: userId });
+      // Already there (e.g. a double tap) is fine, not an error.
+      const { error } = await supabase
+        .from('kudos')
+        .upsert({ entry_id: entryId, user_id: userId }, { onConflict: 'entry_id,user_id', ignoreDuplicates: true });
       check(error);
     })()
   );

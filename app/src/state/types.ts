@@ -1,10 +1,5 @@
 import type { Entry, FriendPost, Friend, Comment, Companion } from '../types';
 
-export interface NewCompanionDraft {
-  name: string;
-  nationalities: string[];
-}
-
 export interface StoryDraft {
   // Always set: the existing entry's id when editing, or a fresh UUID for a new
   // story (assigned when the draft opens, so publish — and a photo upload before
@@ -24,7 +19,10 @@ export interface StoryDraft {
   photoPath: string;
   pub: boolean;
   hideName: boolean;
-  newCompanion: NewCompanionDraft | null;
+  // What's typed in "Who is it?". If it matches no one already logged, it
+  // becomes a new person on publish, with these passports.
+  personQuery: string;
+  newPersonNats: string[];
 }
 
 export interface SignupPair {
@@ -72,7 +70,7 @@ export type DetailKind = 'mine' | 'feed' | null;
 export interface SheetAction {
   label: string;
   color?: string;
-  kind: 'edit' | 'vis' | 'del' | 'report' | 'addmap' | 'mapRename' | 'mapNats' | 'mapBackfill';
+  kind: 'edit' | 'vis' | 'del' | 'report' | 'addmap' | 'mapRename' | 'mapNats' | 'mapBackfill' | 'unfriend';
 }
 
 export interface SheetState {
@@ -187,10 +185,10 @@ export type AppAction =
   | { type: 'PATCH_STORY'; patch: Partial<StoryDraft> }
   | { type: 'CLOSE_STORY' }
   | { type: 'PUBLISH_STORY' }
-  | { type: 'OPEN_NEW_COMPANION' }
-  | { type: 'PATCH_NEW_COMPANION'; patch: Partial<NewCompanionDraft> }
-  | { type: 'SAVE_NEW_COMPANION'; id: string }
-  | { type: 'CANCEL_NEW_COMPANION' }
+  // A person created from a typed name on publish; also selects them for the story.
+  | { type: 'ADD_COMPANION'; companion: Companion }
+  // Friends-list ⋯ menu (remove a friend / cancel a request).
+  | { type: 'OPEN_FRIEND_MENU'; id: string }
   | { type: 'OPEN_PICKER'; kind: PickerKind }
   | { type: 'SET_PICKER_QUERY'; query: string }
   | { type: 'PICK_COUNTRY'; label: string }

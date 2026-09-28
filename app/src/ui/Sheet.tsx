@@ -3,7 +3,7 @@ import * as api from '../lib/api';
 import type { SheetAction } from '../state/types';
 
 export function Sheet() {
-  const { state, dispatch } = useStore();
+  const { state, dispatch, refresh } = useStore();
   if (!state.sheet) return null;
   const close = () => dispatch({ type: 'CLOSE_SHEET' });
 
@@ -16,6 +16,12 @@ export function Sheet() {
     if (!me) return;
     const fail = () => dispatch({ type: 'SHOW_TOAST', message: "couldn't sync that change to your account." });
     if (kind === 'report' && state.friendPosts.some((p) => p.id === target)) api.reportEntry(target, me).catch(fail);
+    if (kind === 'unfriend') {
+      api.removeFriendship(me, target).catch(() => {
+        fail();
+        refresh();
+      });
+    }
     if (!entry) return;
     if (kind === 'vis') api.updateEntry(entry.id, { pub: !entry.pub }).catch(fail);
     if (kind === 'del') api.deleteEntry(entry.id, entry.photoPath).catch(fail);
