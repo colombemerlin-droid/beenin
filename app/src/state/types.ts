@@ -27,9 +27,14 @@ export interface StoryDraft {
 
 export interface SignupPair {
   // Assigned when the row is drafted, so a photo can upload before commit and
-  // the committed entry reuses the same id.
+  // the committed entry (the first country's) reuses the same id.
   id: string;
-  country: string;
+  // One person can have several countries in a single backfill entry; each
+  // becomes its own entry on commit. `entryIds` (aligned with `countries`, the
+  // first being `id`) are fixed when the entry is added, so the reducer and
+  // the server get the same ids.
+  countries: string[];
+  entryIds: string[];
   nationality: string[];
   date: string;
   // Who it was with: typed name, plus the remembered person's id when one was
@@ -241,7 +246,6 @@ export type AppAction =
   | { type: 'PICK_COUNTRY'; label: string }
   | { type: 'TOGGLE_PICKER_DRAFT'; label: string }
   | { type: 'SAVE_PICKER' }
-  | { type: 'PICK_SIGNUP_COUNTRY'; label: string }
   | { type: 'PICK_EMOJI'; ch: string }
   | { type: 'PICK_SIGNUP_EMOJI'; ch: string }
   | { type: 'CLOSE_PICKER' }

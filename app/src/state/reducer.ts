@@ -6,7 +6,7 @@ import type { EntryFields } from '../lib/api';
 import { personFootprint } from './selectors';
 
 function emptyPairDraft(): SignupPair {
-  return { id: crypto.randomUUID(), country: '', nationality: [], date: '', name: '', companionId: '', expanded: false, place: '', note: '', emoji: '', photoPath: '' };
+  return { id: crypto.randomUUID(), countries: [], entryIds: [], nationality: [], date: '', name: '', companionId: '', expanded: false, place: '', note: '', emoji: '', photoPath: '' };
 }
 
 // Server data replaces local state wholesale; an open person/detail keeps
@@ -130,29 +130,33 @@ export function storyFields(state: AppState, s: StoryDraft): EntryFields {
   };
 }
 
-// The entries a backfill commit creates, one per pair (reusing each pair's id),
+// The entries a backfill commit creates — one per country of each pair —
 // linked to the remembered person each pair was with (`links`: pair id →
-// companion id). Exported so the commit handler sends the same rows to the server.
+// companion id). Optional details (place, note, emoji, photo) belong to the
+// pair's first country. Exported so the commit handler sends the same rows to
+// the server.
 export function signupStubs(state: AppState, links: Record<string, string> = {}): Entry[] {
   if (!state.signup) return [];
   const mapScoped = !!state.mapBackfillFor;
-  return state.signup.pairs.map((p, i) => {
+  const rows = state.signup.pairs.flatMap((p) => p.countries.map((country, j) => ({ p, country, id: p.entryIds[j], first: j === 0 })));
+  return rows.map(({ p, country, id, first }, i) => {
     const companionId = mapScoped ? undefined : links[p.id] || p.companionId || undefined;
+    const detailed = p.expanded && first;
     return {
-    id: p.id,
+    id,
     companionId,
-    country: p.country,
+    country,
     nationality: mapScoped ? [] : natsOf(p.nationality),
     city: '',
-    place: p.expanded ? p.place.trim() : '',
+    place: detailed ? p.place.trim() : '',
     placePub: false,
     date: p.date || '',
     name: companionId || mapScoped ? '' : p.name.trim(),
-    note: p.expanded ? p.note : '',
-    emoji: p.expanded ? p.emoji : '',
-    photoPath: p.expanded ? p.photoPath : '',
+    note: detailed ? p.note : '',
+    emoji: detailed ? p.emoji : '',
+    photoPath: detailed ? p.photoPath : '',
     pub: false,
-    stub: !p.expanded,
+    stub: !detailed,
     ord: 20000 + i,
     when: 'backfilled',
     kudos: [],
@@ -208,12 +212,13 @@ export function reducer(state: AppState, action: AppAction): AppState {
 
     case 'ADD_PAIR': {
       const d = state.pairDraft;
-      const mapScoped = !!(state.newMapDraft || state.mapBackfillFor);
-      if (!d.country || (!mapScoped && !d.nationality.length)) return state;
+      const mapScoped = !!state.mapBackfillFor;
+      if (!d.countries.length || (!mapScoped && !d.nationality.length)) return state;
       if (!state.signup) return state;
+      const entryIds = d.countries.map((_, j) => (j === 0 ? d.id : crypto.randomUUID()));
       return {
         ...state,
-        signup: { pairs: [...state.signup.pairs, { ...d }] },
+        signup: { pairs: [...state.signup.pairs, { ...d, entryIds }] },
         pairDraft: emptyPairDraft(),
       };
     }
@@ -298,6 +303,7 @@ export function reducer(state: AppState, action: AppAction): AppState {
     case 'OPEN_PICKER': {
       let seed: string[] = [];
       if (action.kind === 'signupNat') seed = state.pairDraft.nationality.slice();
+      if (action.kind === 'signupCountry') seed = state.pairDraft.countries.slice();
       if (action.kind === 'mapNat') {
         // The New map screen edits the draft even if another map is still open underneath.
         const openMap = state.overlay !== 'newMap' && state.openMapId ? state.maps.find((m) => m.id === state.openMapId) : undefined;
@@ -326,6 +332,9 @@ export function reducer(state: AppState, action: AppAction): AppState {
     }
 
     case 'SAVE_PICKER': {
+      if (state.picker === 'signupCountry') {
+        return { ...state, pairDraft: { ...state.pairDraft, countries: state.pickerDraft.slice() }, picker: null, pickerQuery: '', pickerDraft: [] };
+      }
       if (state.picker === 'signupNat') {
         return { ...state, pairDraft: { ...state.pairDraft, nationality: state.pickerDraft.slice() }, picker: null, pickerQuery: '', pickerDraft: [] };
       }
@@ -352,9 +361,6 @@ export function reducer(state: AppState, action: AppAction): AppState {
       }
       return { ...state, picker: null, pickerQuery: '', pickerDraft: [] };
     }
-
-    case 'PICK_SIGNUP_COUNTRY':
-      return { ...state, pairDraft: { ...state.pairDraft, country: action.label }, picker: null, pickerQuery: '' };
 
     case 'PICK_EMOJI': {
       if (!state.story) return state;

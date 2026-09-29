@@ -18,7 +18,7 @@ export function Picker() {
   if (isEmojiMode) return <EmojiPicker kind={pk} />;
 
   const isNatMode = pk === 'signupNat' || pk === 'mapNat' || pk === 'companionNat' || pk === 'editCompanionNat';
-  const isMulti = isNatMode || pk === 'mapCountries';
+  const isMulti = isNatMode || pk === 'mapCountries' || pk === 'signupCountry';
   const openMap = pk === 'mapCountries' && state.openMapId ? state.maps.find((m) => m.id === state.openMapId) : undefined;
   // Countries already on the map being added to: shown ticked, not re-addable.
   const locked = new Set(
@@ -45,10 +45,10 @@ export function Picker() {
     dispatch({ type: 'SAVE_PICKER' });
     if (mapId) api.updateMap(mapId, { nationalities }).catch(() => dispatch({ type: 'SHOW_TOAST', message: "couldn't save that to your account." }));
   }
-  const title = isNatMode ? 'Passport' : pk === 'mapCountries' ? `Add to ${openMap?.name || 'map'}` : 'Country';
+  const title = isNatMode ? 'Passport' : pk === 'mapCountries' ? `Add to ${openMap?.name || 'map'}` : pk === 'signupCountry' ? 'Countries' : 'Country';
   const q = state.pickerQuery.toLowerCase();
 
-  const chosen = pk === 'country' ? state.story?.country || '' : pk === 'signupCountry' ? state.pairDraft.country : '';
+  const chosen = pk === 'country' ? state.story?.country || '' : '';
   const unknownActive = isNatMode ? state.pickerDraft.includes(UNKNOWN) : chosen === UNKNOWN;
 
   const options = PAIRS.filter((p) => (isNatMode ? p.nationality : p.country).toLowerCase().includes(q)).map((p) => {
@@ -61,7 +61,6 @@ export function Picker() {
     if (locked.has(label)) return;
     if (isMulti) return dispatch({ type: 'TOGGLE_PICKER_DRAFT', label });
     if (pk === 'country') return dispatch({ type: 'PICK_COUNTRY', label });
-    if (pk === 'signupCountry') return dispatch({ type: 'PICK_SIGNUP_COUNTRY', label });
   }
 
   return (

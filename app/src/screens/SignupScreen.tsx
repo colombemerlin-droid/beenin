@@ -5,7 +5,7 @@ import * as api from '../lib/api';
 import { flagOf, natFlagOf } from '../data/countries';
 import { fmtDate } from '../data/format';
 import { Picker, UNKNOWN, inputStyle, primaryBtnStyle } from '../ui/Picker';
-import { fieldBtnStyle } from '../ui/formKit';
+import { fieldBtnStyle, chipStyle, dashedChipStyle } from '../ui/formKit';
 import { PhotoField } from '../ui/Photo';
 import { PersonField } from '../ui/PersonField';
 import type { SignupPair } from '../state/types';
@@ -17,11 +17,11 @@ export function SignupScreen() {
   if (!g) return null;
   const d = state.pairDraft;
   const mapScoped = !!state.mapBackfillFor;
-  const canAdd = mapScoped ? !!d.country : !!(d.country && d.nationality.length);
+  const canAdd = mapScoped ? d.countries.length > 0 : !!(d.countries.length && d.nationality.length);
   const count = g.pairs.length;
   const mapName = state.maps.find((m) => m.id === state.mapBackfillFor)?.name;
   const last = g.pairs[g.pairs.length - 1];
-  const draftStarted = !!(d.name.trim() || d.country || d.nationality.length || d.date);
+  const draftStarted = !!(d.name.trim() || d.countries.length || d.nationality.length || d.date);
 
   const fail = () => dispatch({ type: 'SHOW_TOAST', message: "couldn't save that to your account — try again in a moment." });
 
@@ -128,14 +128,26 @@ export function SignupScreen() {
             </>
           )}
           <div className="label" style={{ ...fieldLabelStyle, marginTop: mapScoped ? 0 : 12 }}>
-            Country
+            {d.countries.length > 1 ? 'Countries' : 'Country'}
           </div>
-          <button onClick={() => dispatch({ type: 'OPEN_PICKER', kind: 'signupCountry' })} style={pickerFieldStyle}>
-            <span style={{ fontSize: 17, lineHeight: 1 }}>{d.country ? flagOf(d.country) : '\u{1F30D}'}</span>
-            <span style={{ flex: 1, minWidth: 0, font: '400 14px/1.4 Inter, sans-serif', color: d.country ? 'var(--ink)' : 'var(--ink-40)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {d.country || 'where'}
-            </span>
-          </button>
+          {d.countries.length === 0 ? (
+            <button onClick={() => dispatch({ type: 'OPEN_PICKER', kind: 'signupCountry' })} style={pickerFieldStyle}>
+              <span style={{ fontSize: 17, lineHeight: 1 }}>{'\u{1F30D}'}</span>
+              <span style={{ flex: 1, minWidth: 0, font: '400 14px/1.4 Inter, sans-serif', color: 'var(--ink-40)' }}>where — one or more</span>
+            </button>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {d.countries.map((c) => (
+                <button key={c} onClick={() => dispatch({ type: 'OPEN_PICKER', kind: 'signupCountry' })} style={chipStyle}>
+                  <span style={{ fontSize: 14, lineHeight: 1 }}>{flagOf(c)}</span>
+                  <span>{c}</span>
+                </button>
+              ))}
+              <button onClick={() => dispatch({ type: 'OPEN_PICKER', kind: 'signupCountry' })} style={dashedChipStyle}>
+                + Another country
+              </button>
+            </div>
+          )}
           <div className="label" style={{ ...fieldLabelStyle, marginTop: 12 }}>
             First interaction · optional
           </div>
@@ -181,6 +193,11 @@ export function SignupScreen() {
 
           {d.expanded && (
             <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {d.countries.length > 1 && (
+                <div style={{ font: '400 12px/1.5 Inter, sans-serif', color: 'var(--ink-40)' }}>
+                  These details go with {flagOf(d.countries[0])} {d.countries[0]}; the other countries are logged without them.
+                </div>
+              )}
               <div>
                 <div className="label" style={{ marginBottom: 6 }}>
                   Location · optional
@@ -236,10 +253,10 @@ export function SignupScreen() {
         </div>
         {g.pairs.map((p, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 0', borderBottom: '1px solid var(--stone)' }}>
-            <span style={{ fontSize: 18, lineHeight: 1, flex: 'none' }}>{flagOf(p.country)}</span>
+            <span style={{ fontSize: 18, lineHeight: 1, flex: 'none' }}>{flagOf(p.countries[0])}</span>
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: 'block', font: '400 15px/1.4 Inter, sans-serif' }}>
-                {p.name.trim() ? `${p.name.trim()} · ${p.country}` : p.country}
+                {[p.name.trim(), p.countries.join(', ')].filter(Boolean).join(' · ')}
               </span>
               <span style={{ display: 'block', font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 2 }}>
                 {[p.nationality.join(' · '), p.date ? `first ${fmtDate(p.date)}` : '', p.expanded ? 'details added' : ''].filter(Boolean).join(' · ') || 'no details'}
