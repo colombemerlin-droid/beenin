@@ -118,6 +118,12 @@ export function ProfileScreen() {
         <ChevronRightIcon size={19} color="#A39A92" />
       </button>
 
+      <button onClick={() => dispatch({ type: 'OPEN_NAMES' })} style={{ ...navRowStyle, marginTop: 10 }}>
+        <span style={{ flex: 1, font: '600 17px/1.3 Inter, sans-serif' }}>Names</span>
+        {state.companions.length > 0 && <span style={{ font: '400 13px/1 Inter, sans-serif', color: 'var(--ink-40)' }}>{state.companions.length}</span>}
+        <ChevronRightIcon size={19} color="#A39A92" />
+      </button>
+
       <button onClick={() => dispatch({ type: 'START_SIGNUP' })} style={{ ...navRowStyle, marginTop: 10 }}>
         <span style={{ flex: 1, font: '600 17px/1.3 Inter, sans-serif' }}>Backfill your collection</span>
         <ChevronRightIcon size={19} color="#A39A92" />

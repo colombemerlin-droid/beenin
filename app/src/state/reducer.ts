@@ -5,7 +5,7 @@ import type { Entry } from '../types';
 import type { EntryFields } from '../lib/api';
 
 function emptyPairDraft(): SignupPair {
-  return { id: crypto.randomUUID(), country: '', nationality: [], date: '', name: '', expanded: false, place: '', note: '', emoji: '', photoPath: '' };
+  return { id: crypto.randomUUID(), country: '', nationality: [], date: '', name: '', companionId: '', expanded: false, place: '', note: '', emoji: '', photoPath: '' };
 }
 
 // Server data replaces local state wholesale; an open person/detail keeps
@@ -45,6 +45,7 @@ export const initialState: AppState = {
   addMapCountry: '',
 
   story: null,
+  companionEdit: null,
 
   picker: null,
   pickerQuery: '',
@@ -128,20 +129,24 @@ export function storyFields(state: AppState, s: StoryDraft): EntryFields {
   };
 }
 
-// The entries a backfill commit creates, one per pair (reusing each pair's id).
-// Exported so the commit handler can send the same rows to the server.
-export function signupStubs(state: AppState): Entry[] {
+// The entries a backfill commit creates, one per pair (reusing each pair's id),
+// linked to the remembered person each pair was with (`links`: pair id →
+// companion id). Exported so the commit handler sends the same rows to the server.
+export function signupStubs(state: AppState, links: Record<string, string> = {}): Entry[] {
   if (!state.signup) return [];
-  const mapScoped = !!(state.newMapDraft || state.mapBackfillFor);
-  return state.signup.pairs.map((p, i) => ({
+  const mapScoped = !!state.mapBackfillFor;
+  return state.signup.pairs.map((p, i) => {
+    const companionId = mapScoped ? undefined : links[p.id] || p.companionId || undefined;
+    return {
     id: p.id,
+    companionId,
     country: p.country,
     nationality: mapScoped ? [] : natsOf(p.nationality),
     city: '',
     place: p.expanded ? p.place.trim() : '',
     placePub: false,
     date: p.date || '',
-    name: p.expanded ? '' : p.name || '',
+    name: companionId || mapScoped ? '' : p.name.trim(),
     note: p.expanded ? p.note : '',
     emoji: p.expanded ? p.emoji : '',
     photoPath: p.expanded ? p.photoPath : '',
@@ -152,7 +157,8 @@ export function signupStubs(state: AppState): Entry[] {
     kudos: [],
     iK: false,
     comments: [],
-  }));
+    };
+  });
 }
 
 export function reducer(state: AppState, action: AppAction): AppState {
@@ -222,41 +228,26 @@ export function reducer(state: AppState, action: AppAction): AppState {
 
     case 'COMMIT_SIGNUP': {
       if (!state.signup) return state;
-      const stubs = signupStubs(state);
+      const stubs = signupStubs(state, action.links);
+      const base = { ...state, companions: [...state.companions, ...action.newCompanions] };
 
-      if (state.newMapDraft) {
-        const map: GroupMap = {
-          id: state.newMapDraft.id,
-          name: state.newMapDraft.name.trim() || 'Untitled map',
-          nationalities: state.newMapDraft.nationalities,
-          entries: stubs,
-        };
-        const next = { ...state, maps: [...state.maps, map], signup: null, newMapDraft: null, mapBackfillFor: null, openMapId: map.id, overlay: null };
-        return withToast(next, `${map.name} is live. ${stubs.length} on the record.`);
-      }
-
-      if (state.mapBackfillFor) {
-        const mapId = state.mapBackfillFor;
-        const maps = state.maps.map((m) => (m.id === mapId ? { ...m, entries: [...m.entries, ...stubs] } : m));
-        const next = { ...state, maps, signup: null, mapBackfillFor: null, overlay: null };
+      if (base.mapBackfillFor) {
+        const mapId = base.mapBackfillFor;
+        const maps = base.maps.map((m) => (m.id === mapId ? { ...m, entries: [...m.entries, ...stubs] } : m));
+        const next = { ...base, maps, signup: null, mapBackfillFor: null, overlay: null };
         return stubs.length ? withToast(next, `${stubs.length} added.`) : next;
       }
 
-      const withStubs = { ...state, entries: [...state.entries, ...stubs], signup: null, tab: 'map' as const, side: 0 as const };
+      const withStubs = { ...base, entries: [...base.entries, ...stubs], signup: null, tab: 'map' as const, side: 0 as const };
       return stubs.length ? withToast(withStubs, `${stubs.length} on the record without the paperwork. details whenever you like.`) : withStubs;
     }
 
-    case 'SKIP_SIGNUP': {
-      if (state.newMapDraft) {
-        const map: GroupMap = { id: state.newMapDraft.id, name: state.newMapDraft.name.trim() || 'Untitled map', nationalities: state.newMapDraft.nationalities, entries: [] };
-        return { ...state, maps: [...state.maps, map], signup: null, newMapDraft: null, openMapId: map.id, overlay: null };
-      }
+    case 'SKIP_SIGNUP':
       return { ...state, signup: null, mapBackfillFor: null };
-    }
 
     case 'SET_TAB':
       // A tab switch leaves everything that was open on the old tab behind.
-      return { ...state, tab: action.tab, overlay: null, detailOn: false, openMapId: null, mapRenaming: false, sheet: null };
+      return { ...state, tab: action.tab, overlay: null, detailOn: false, openMapId: null, mapRenaming: false, sheet: null, companionEdit: null };
 
     case 'SET_SIDE':
       return { ...state, side: action.side };
@@ -316,6 +307,7 @@ export function reducer(state: AppState, action: AppAction): AppState {
         seed = openMap ? openMap.nationalities.slice() : state.newMapDraft?.nationalities.slice() || [];
       }
       if (action.kind === 'companionNat') seed = state.story?.newPersonNats.slice() || [];
+      if (action.kind === 'editCompanionNat') seed = state.companionEdit?.nationalities.slice() || [];
       return { ...state, picker: action.kind, pickerQuery: '', pickerDraft: seed };
     }
 
@@ -348,6 +340,9 @@ export function reducer(state: AppState, action: AppAction): AppState {
         if (state.newMapDraft) {
           return { ...state, newMapDraft: { ...state.newMapDraft, nationalities: state.pickerDraft.slice() }, picker: null, pickerQuery: '', pickerDraft: [] };
         }
+      }
+      if (state.picker === 'editCompanionNat' && state.companionEdit) {
+        return { ...state, companionEdit: { ...state.companionEdit, nationalities: state.pickerDraft.slice() }, picker: null, pickerQuery: '', pickerDraft: [] };
       }
       if (state.picker === 'companionNat' && state.story) {
         return {
@@ -459,11 +454,35 @@ export function reducer(state: AppState, action: AppAction): AppState {
     case 'OPEN_HISTORY':
       return { ...state, overlay: 'history' };
 
+    case 'OPEN_NAMES':
+      return { ...state, overlay: 'names' };
+
+    case 'OPEN_COMPANION_MENU': {
+      const c = state.companions.find((x) => x.id === action.id);
+      if (!c) return state;
+      return { ...state, sheet: { title: c.name, actions: [{ label: 'Edit', kind: 'editCompanion' }] }, sheetTarget: c.id };
+    }
+
+    case 'PATCH_COMPANION_EDIT':
+      return state.companionEdit ? { ...state, companionEdit: { ...state.companionEdit, ...action.patch } } : state;
+
+    case 'CLOSE_COMPANION_EDIT':
+      return { ...state, companionEdit: null };
+
+    case 'UPDATE_COMPANION': {
+      const c = action.companion;
+      // A story's passport stamps follow the person's passports (mirrors the
+      // server trigger); entries that logged no passport stay that way.
+      const entries = state.entries.map((e) => (e.companionId === c.id && e.nationality.length ? { ...e, nationality: c.nationalities } : e));
+      const companions = state.companions.map((x) => (x.id === c.id ? c : x));
+      return withToast({ ...state, companions, entries, companionEdit: null }, 'saved.');
+    }
+
     case 'OPEN_FRIEND_REQUESTS':
       return { ...state, overlay: 'friendRequests' };
 
     case 'CLOSE_OVERLAY':
-      return { ...state, overlay: null, sheet: null, addMapCountry: '' };
+      return { ...state, overlay: null, sheet: null, addMapCountry: '', companionEdit: null };
 
     case 'OPEN_MINE_MENU': {
       const e = state.entries.find((x) => x.id === action.id);
@@ -536,6 +555,10 @@ export function reducer(state: AppState, action: AppAction): AppState {
       const id = state.sheetTarget;
       const cleared = { ...state, sheet: null };
       if (action.kind === 'report') return withToast(cleared, 'reported. we’ll take it from here — quietly.');
+      if (action.kind === 'editCompanion') {
+        const c = cleared.companions.find((x) => x.id === id);
+        return c ? { ...cleared, companionEdit: { id: c.id, name: c.name, nationalities: c.nationalities.slice() } } : cleared;
+      }
       if (action.kind === 'unfriend') {
         // Friendship is one shared link: removing it unlinks both sides at once.
         // Their posts leave your feed (and yours leave theirs); reconnecting
@@ -600,7 +623,6 @@ export function reducer(state: AppState, action: AppAction): AppState {
         ...state,
         overlay: 'newMap',
         newMapDraft: { id: crypto.randomUUID(), name: '', nationalities: [] },
-        pairDraft: { ...emptyPairDraft(), country: state.addMapCountry || '' },
       };
 
     case 'PATCH_NEW_MAP': {
@@ -608,8 +630,20 @@ export function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, newMapDraft: { ...state.newMapDraft, ...action.patch } };
     }
 
-    case 'START_MAP_BACKFILL':
-      return { ...state, overlay: null, signup: { pairs: [] } };
+    case 'CREATE_MAP': {
+      const d = state.newMapDraft;
+      if (!d) return state;
+      const map: GroupMap = { id: d.id, name: d.name.trim() || 'Untitled map', nationalities: d.nationalities, entries: action.entries };
+      const next = { ...state, maps: [...state.maps, map], newMapDraft: null, addMapCountry: '', overlay: null, openMapId: map.id, tab: 'map' as const, detailOn: false };
+      return withToast(next, `${map.name} is live.`);
+    }
+
+    case 'ADD_MAP_COUNTRIES': {
+      if (!action.entries.length) return state;
+      const maps = state.maps.map((m) => (m.id === action.mapId ? { ...m, entries: [...action.entries, ...m.entries] } : m));
+      const n = action.entries.length;
+      return withToast({ ...state, maps }, n === 1 ? `added ${action.entries[0].country}.` : `added ${n} countries.`);
+    }
 
     case 'CANCEL_NEW_MAP':
       return { ...state, overlay: null, newMapDraft: null, addMapCountry: '' };
@@ -646,15 +680,16 @@ export function reducer(state: AppState, action: AppAction): AppState {
   }
 }
 
-// A bare "we've been here" country on a group map (from "Add to a map").
+// A bare "we've been here" country on a group map ("Add to a map", or the map's
+// own "Add countries", which passes no date).
 // Exported so the caller sends the same row to the server.
-export function mapQuickEntry(id: string, country: string): Entry {
+export function mapQuickEntry(id: string, country: string, date = today()): Entry {
   return {
     id,
     country,
     nationality: [],
     city: '',
-    date: today(),
+    date,
     name: '',
     note: '',
     emoji: '',

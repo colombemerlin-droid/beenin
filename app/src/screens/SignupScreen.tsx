@@ -1,48 +1,66 @@
 import { useStore } from '../state/store';
 import { signupStubs } from '../state/reducer';
+import { initialsOf } from '../lib/identity';
 import * as api from '../lib/api';
 import { flagOf } from '../data/countries';
 import { fmtDate } from '../data/format';
-import { Picker, inputStyle, primaryBtnStyle } from '../ui/Picker';
+import { Picker, UNKNOWN, inputStyle, primaryBtnStyle } from '../ui/Picker';
 import { fieldBtnStyle } from '../ui/formKit';
 import { PhotoField } from '../ui/Photo';
+import { PersonField } from '../ui/PersonField';
+import type { SignupPair } from '../state/types';
+import type { Companion } from '../types';
 
 export function SignupScreen() {
   const { state, dispatch } = useStore();
   const g = state.signup;
   if (!g) return null;
   const d = state.pairDraft;
-  const mapScoped = !!(state.newMapDraft || state.mapBackfillFor);
+  const mapScoped = !!state.mapBackfillFor;
   const canAdd = mapScoped ? !!d.country : !!(d.country && d.nationality.length);
   const count = g.pairs.length;
-  const mapName = state.newMapDraft?.name || state.maps.find((m) => m.id === state.mapBackfillFor)?.name;
+  const mapName = state.maps.find((m) => m.id === state.mapBackfillFor)?.name;
 
   const fail = () => dispatch({ type: 'SHOW_TOAST', message: "couldn't save that to your account — try again in a moment." });
 
-  // A brand-new map (from New map → Continue) is created on the server on
-  // Done or Skip, before any of its countries.
-  function createNewMap() {
-    const m = state.newMapDraft;
-    if (!m || !state.authUserId) return;
-    api.createMap(state.authUserId, { id: m.id, name: m.name.trim() || 'Untitled map', nationalities: m.nationalities }).catch(fail);
+  // Each named row becomes (or reuses) a remembered person: picked from the
+  // dropdown, an exact name match, or a brand-new person with that row's passports.
+  function resolvePeople(pairs: SignupPair[]) {
+    const byName = new Map(state.companions.map((c) => [c.name.trim().toLowerCase(), c]));
+    const newCompanions: Companion[] = [];
+    const links: Record<string, string> = {};
+    for (const p of pairs) {
+      const name = p.name.trim();
+      if (p.companionId) {
+        links[p.id] = p.companionId;
+        continue;
+      }
+      if (!name) continue;
+      let c = byName.get(name.toLowerCase());
+      if (!c) {
+        c = { id: crypto.randomUUID(), name, initials: initialsOf(name) || '??', nationalities: p.nationality.filter((n) => n !== UNKNOWN) };
+        byName.set(name.toLowerCase(), c);
+        newCompanions.push(c);
+      }
+      links[p.id] = c.id;
+    }
+    return { newCompanions, links };
   }
 
   function commit() {
-    const stubs = signupStubs(state);
-    const mapId = state.newMapDraft?.id || state.mapBackfillFor || undefined;
-    createNewMap();
-    dispatch({ type: 'COMMIT_SIGNUP' });
-    if (!state.authUserId || !stubs.length) return;
-    api
-      .createEntries(
-        state.authUserId,
-        stubs.map((e) => ({ id: e.id, fields: mapId ? { ...e, mapId, mapNative: true } : e }))
-      )
-      .catch(fail);
+    if (!g) return;
+    const { newCompanions, links } = mapScoped ? { newCompanions: [], links: {} } : resolvePeople(g.pairs);
+    const stubs = signupStubs(state, links);
+    const mapId = state.mapBackfillFor || undefined;
+    dispatch({ type: 'COMMIT_SIGNUP', newCompanions, links });
+    const me = state.authUserId;
+    if (!me) return;
+    newCompanions.forEach((c) => api.createCompanion(me, c).catch(fail));
+    if (!stubs.length) return;
+    api.createEntries(me, stubs.map((e) => ({ id: e.id, fields: mapId ? { ...e, mapId, mapNative: true } : e }))).catch(fail);
   }
 
   function skip() {
-    createNewMap();
     dispatch({ type: 'SKIP_SIGNUP' });
   }
 
@@ -85,13 +103,23 @@ export function SignupScreen() {
               onChange={(e) => dispatch({ type: 'PATCH_PAIR_DRAFT', patch: { date: e.target.value } })}
               style={{ ...inputStyle, flex: 1, minWidth: 0, padding: '11px 12px' }}
             />
-            <input
-              value={d.name}
-              onChange={(e) => dispatch({ type: 'PATCH_PAIR_DRAFT', patch: { name: e.target.value } })}
-              placeholder="name · optional"
-              style={{ ...inputStyle, flex: 1, minWidth: 0, padding: '11px 12px' }}
-            />
           </div>
+          {!mapScoped && (
+            <PersonField
+              value={d.name}
+              people={state.companions}
+              onChange={(name) => dispatch({ type: 'PATCH_PAIR_DRAFT', patch: { name, companionId: '' } })}
+              onPick={(c) =>
+                dispatch({
+                  type: 'PATCH_PAIR_DRAFT',
+                  // A remembered person brings their passports along.
+                  patch: { name: c.name, companionId: c.id, nationality: c.nationalities.length ? c.nationalities.slice() : d.nationality },
+                })
+              }
+              placeholder="who with · optional"
+              style={{ marginTop: 8 }}
+            />
+          )}
 
           <button
             onClick={() => dispatch({ type: 'TOGGLE_PAIR_EXPANDED' })}

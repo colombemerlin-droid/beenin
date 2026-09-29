@@ -32,7 +32,10 @@ export interface SignupPair {
   country: string;
   nationality: string[];
   date: string;
+  // Who it was with: typed name, plus the remembered person's id when one was
+  // picked from the dropdown. A new name becomes a remembered person on commit.
   name: string;
+  companionId: string;
   // Set only when the row was expanded via the "+" — matches the story flow's optional fields.
   // Backlog entries never share to the wall, so there's no `pub`/`placePub` here — always private.
   expanded: boolean;
@@ -59,9 +62,19 @@ export interface NewMapDraft {
   nationalities: string[];
 }
 
-export type PickerKind = 'country' | 'signupCountry' | 'signupNat' | 'emoji' | 'signupEmoji' | 'mapNat' | 'companionNat' | null;
+export type PickerKind =
+  | 'country'
+  | 'signupCountry'
+  | 'signupNat'
+  | 'emoji'
+  | 'signupEmoji'
+  | 'mapNat'
+  | 'companionNat'
+  | 'editCompanionNat'
+  | 'mapCountries' // several countries at once, straight onto the open group map
+  | null;
 
-export type OverlayKind = 'history' | 'friends' | 'person' | 'newMap' | 'mapPicker' | 'friendRequests' | null;
+export type OverlayKind = 'history' | 'names' | 'friends' | 'person' | 'newMap' | 'mapPicker' | 'friendRequests' | null;
 
 export type TabKind = 'map' | 'feed' | 'notifications' | 'profile';
 
@@ -70,12 +83,18 @@ export type DetailKind = 'mine' | 'feed' | null;
 export interface SheetAction {
   label: string;
   color?: string;
-  kind: 'edit' | 'vis' | 'del' | 'report' | 'addmap' | 'mapRename' | 'mapNats' | 'mapBackfill' | 'unfriend';
+  kind: 'edit' | 'vis' | 'del' | 'report' | 'addmap' | 'mapRename' | 'mapNats' | 'mapBackfill' | 'unfriend' | 'editCompanion';
 }
 
 export interface SheetState {
   title: string;
   actions: SheetAction[];
+}
+
+export interface CompanionEdit {
+  id: string;
+  name: string;
+  nationalities: string[];
 }
 
 export interface Profile {
@@ -131,6 +150,9 @@ export interface AppState {
 
   story: StoryDraft | null;
 
+  // A remembered person being edited from Profile → Names.
+  companionEdit: CompanionEdit | null;
+
   picker: PickerKind;
   pickerQuery: string;
   pickerDraft: string[];
@@ -176,7 +198,10 @@ export type AppAction =
   | { type: 'TOGGLE_PAIR_EXPANDED' }
   | { type: 'ADD_PAIR' }
   | { type: 'REMOVE_PAIR'; index: number }
-  | { type: 'COMMIT_SIGNUP' }
+  // `newCompanions`: people first named in this backfill; `links`: pair id → the
+  // remembered person it was with. Both resolved by the caller so the same ids
+  // go to the server.
+  | { type: 'COMMIT_SIGNUP'; newCompanions: Companion[]; links: Record<string, string> }
   | { type: 'SKIP_SIGNUP' }
   | { type: 'SET_TAB'; tab: TabKind }
   | { type: 'SET_SIDE'; side: 0 | 1 }
@@ -189,6 +214,11 @@ export type AppAction =
   | { type: 'ADD_COMPANION'; companion: Companion }
   // Friends-list ⋯ menu (remove a friend / cancel a request).
   | { type: 'OPEN_FRIEND_MENU'; id: string }
+  | { type: 'OPEN_NAMES' }
+  | { type: 'OPEN_COMPANION_MENU'; id: string }
+  | { type: 'PATCH_COMPANION_EDIT'; patch: Partial<CompanionEdit> }
+  | { type: 'CLOSE_COMPANION_EDIT' }
+  | { type: 'UPDATE_COMPANION'; companion: Companion }
   | { type: 'OPEN_PICKER'; kind: PickerKind }
   | { type: 'SET_PICKER_QUERY'; query: string }
   | { type: 'PICK_COUNTRY'; label: string }
@@ -225,7 +255,9 @@ export type AppAction =
   | { type: 'CLEAR_TOAST'; token: number }
   | { type: 'OPEN_NEW_MAP' }
   | { type: 'PATCH_NEW_MAP'; patch: Partial<NewMapDraft> }
-  | { type: 'START_MAP_BACKFILL' }
+  // New map → Create: the map is created and opened straight away.
+  | { type: 'CREATE_MAP'; entries: Entry[] }
+  | { type: 'ADD_MAP_COUNTRIES'; mapId: string; entries: Entry[] }
   | { type: 'CANCEL_NEW_MAP' }
   | { type: 'OPEN_MAP'; mapId: string }
   | { type: 'CLOSE_MAP' }

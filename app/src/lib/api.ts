@@ -221,6 +221,18 @@ export function createCompanion(userId: string, c: Companion): Promise<void> {
   return track(remember([c.id], p));
 }
 
+// Renaming or changing passports. The server re-derives the stories that
+// depend on it (their passport stamps, and the name friends see).
+export function updateCompanion(c: Companion): Promise<void> {
+  return track(
+    (async () => {
+      await ready(c.id);
+      const { error } = await supabase.from('companions').update({ name: c.name, initials: c.initials, nationalities: c.nationalities }).eq('id', c.id);
+      check(error);
+    })()
+  );
+}
+
 export function createMap(userId: string, m: { id: string; name: string; nationalities: string[] }): Promise<void> {
   const p = (async () => {
     const { error } = await supabase.from('group_maps').insert({ id: m.id, owner_id: userId, name: m.name, nationalities: m.nationalities });

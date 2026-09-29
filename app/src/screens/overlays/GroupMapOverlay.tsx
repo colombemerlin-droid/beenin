@@ -86,10 +86,27 @@ export function GroupMapOverlay() {
           </div>
         </div>
 
+        <button
+          onClick={() => dispatch({ type: 'OPEN_PICKER', kind: 'mapCountries' })}
+          style={{
+            width: '100%',
+            marginTop: 14,
+            padding: 14,
+            borderRadius: 14,
+            border: '1px dashed var(--coral)',
+            background: 'var(--coral-tint)',
+            cursor: 'pointer',
+            color: 'var(--coral-dark)',
+            font: '600 15px/1 Inter, sans-serif',
+          }}
+        >
+          + Add countries
+        </button>
+
         {countries.length === 0 ? (
           <EmptyState
             title="Nothing on this map yet"
-            body="Backfill it from the three-dot menu, or add to it next time you see somewhere you've both been."
+            body="Add the countries you've been to together — they count on your own Been map too."
           />
         ) : (
           <div style={{ marginTop: 16, background: 'var(--cream)', borderRadius: 14, padding: '14px 16px 6px', boxShadow: '0 1px 2px rgba(31,26,23,.04), 0 4px 14px rgba(31,26,23,.06)' }}>

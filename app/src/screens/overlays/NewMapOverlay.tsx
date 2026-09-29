@@ -1,4 +1,6 @@
 import { useStore } from '../../state/store';
+import { mapQuickEntry } from '../../state/reducer';
+import * as api from '../../lib/api';
 import { natFlagOf } from '../../data/countries';
 import { OverlayHeader } from '../../ui/OverlayHeader';
 import { Picker, inputStyle, primaryBtnStyle } from '../../ui/Picker';
@@ -8,6 +10,18 @@ export function NewMapOverlay() {
   if (state.overlay !== 'newMap' || !state.newMapDraft) return null;
   const d = state.newMapDraft;
   const canContinue = !!(d.name.trim() && d.nationalities.length);
+
+  function create() {
+    if (!d || !canContinue) return;
+    // Arriving from "Add to a map" on a post: that country goes straight onto the new map.
+    const entries = state.addMapCountry ? [mapQuickEntry(crypto.randomUUID(), state.addMapCountry)] : [];
+    dispatch({ type: 'CREATE_MAP', entries });
+    const me = state.authUserId;
+    if (!me) return;
+    const fail = () => dispatch({ type: 'SHOW_TOAST', message: "couldn't save that map to your account — try again." });
+    api.createMap(me, { id: d.id, name: d.name.trim(), nationalities: d.nationalities }).catch(fail);
+    if (entries.length) api.createEntries(me, entries.map((e) => ({ id: e.id, fields: { ...e, mapId: d.id, mapNative: true } }))).catch(fail);
+  }
 
   return (
     <div className="noscroll" style={{ position: 'absolute', inset: 0, background: 'var(--cream-lighter)', zIndex: 40, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
@@ -44,11 +58,11 @@ export function NewMapOverlay() {
 
       <div className="bottom-safe" style={{ flex: 'none', padding: '14px 20px 34px', borderTop: '1px solid var(--stone)' }}>
         <button
-          onClick={() => dispatch({ type: 'START_MAP_BACKFILL' })}
+          onClick={create}
           disabled={!canContinue}
           style={{ ...primaryBtnStyle, width: '100%', padding: 15, opacity: canContinue ? 1 : 0.4, background: canContinue ? 'var(--coral)' : 'var(--ink-40)' }}
         >
-          Continue
+          Create map
         </button>
       </div>
 

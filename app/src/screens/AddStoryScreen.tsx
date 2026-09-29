@@ -9,6 +9,7 @@ import { Picker, inputStyle } from '../ui/Picker';
 import { Toggle, chipStyle, dashedChipStyle, fieldBtnStyle } from '../ui/formKit';
 import { Avatar } from '../ui/Avatar';
 import { PhotoField } from '../ui/Photo';
+import { PersonField } from '../ui/PersonField';
 import { CheckIcon } from '../ui/icons';
 
 export function AddStoryScreen() {
@@ -19,7 +20,6 @@ export function AddStoryScreen() {
   const companion = state.companions.find((c) => c.id === s.companionId);
   const typed = s.personQuery.trim();
   const q = typed.toLowerCase();
-  const matches = q ? state.companions.filter((c) => c.name.toLowerCase().includes(q)) : state.companions;
   // Typing someone's exact name counts as picking them; anything else is a new person.
   const exact = q ? state.companions.find((c) => c.name.trim().toLowerCase() === q) : undefined;
   const isNew = !companion && !!typed && !exact;
@@ -82,39 +82,13 @@ export function AddStoryScreen() {
           </div>
         ) : (
           <div style={{ marginTop: 12 }}>
-            <input
+            <PersonField
               value={s.personQuery}
-              onChange={(e) => dispatch({ type: 'PATCH_STORY', patch: { personQuery: e.target.value } })}
-              placeholder={state.companions.length ? 'type a name, or pick someone below' : 'their name'}
-              autoCapitalize="words"
-              style={inputStyle}
+              people={state.companions}
+              onChange={(personQuery) => dispatch({ type: 'PATCH_STORY', patch: { personQuery } })}
+              onPick={(c) => pick(c.id)}
+              placeholder={state.companions.length ? 'type a name' : 'their name'}
             />
-            {matches.length > 0 && (
-              <div style={{ marginTop: 8, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--stone)' }}>
-                {matches.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => pick(c.id)}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      padding: 12,
-                      background: c === exact ? 'var(--coral-tint)' : 'var(--paper)',
-                      border: 0,
-                      borderBottom: '1px solid var(--stone)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      color: 'var(--ink)',
-                    }}
-                  >
-                    <Avatar token={c.initials} size={32} />
-                    <span style={{ font: '500 14px/1.3 Inter, sans-serif' }}>{c.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
             {isNew && (
               <div style={{ marginTop: 10, padding: 14, borderRadius: 14, background: 'var(--cream)' }}>
                 <div style={{ font: '400 13px/1.45 Inter, sans-serif', color: 'var(--ink-body)' }}>
@@ -136,8 +110,10 @@ export function AddStoryScreen() {
                 </div>
               </div>
             )}
-            {!typed && state.companions.length === 0 && (
-              <div style={{ font: '400 13px/1.5 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 10 }}>Nobody logged yet — type their name.</div>
+            {!typed && (
+              <div style={{ font: '400 13px/1.5 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 8 }}>
+                {state.companions.length ? 'start typing — people you’ve logged will pop up.' : 'nobody logged yet — type their name.'}
+              </div>
             )}
           </div>
         )}

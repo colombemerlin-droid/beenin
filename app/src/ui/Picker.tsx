@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { useStore } from '../state/store';
 import * as api from '../lib/api';
+import { mapQuickEntry } from '../state/reducer';
 import { PAIRS, flagOf } from '../data/countries';
 import { EMOJI_GROUPS, splitEmoji } from '../data/emoji';
 import { OverlayHeader } from './OverlayHeader';
@@ -16,17 +17,35 @@ export function Picker() {
   const isEmojiMode = pk === 'emoji' || pk === 'signupEmoji';
   if (isEmojiMode) return <EmojiPicker kind={pk} />;
 
-  const isNatMode = pk === 'signupNat' || pk === 'mapNat' || pk === 'companionNat';
-  const isMulti = pk === 'signupNat' || pk === 'mapNat' || pk === 'companionNat';
+  const isNatMode = pk === 'signupNat' || pk === 'mapNat' || pk === 'companionNat' || pk === 'editCompanionNat';
+  const isMulti = isNatMode || pk === 'mapCountries';
+  const openMap = pk === 'mapCountries' && state.openMapId ? state.maps.find((m) => m.id === state.openMapId) : undefined;
+  // Countries already on the map being added to: shown ticked, not re-addable.
+  const locked = new Set(
+    openMap ? [...openMap.entries, ...state.entries.filter((e) => e.mapId === openMap.id)].map((e) => e.country).filter(Boolean) : []
+  );
 
   function save() {
+    if (pk === 'mapCountries') {
+      if (openMap && state.pickerDraft.length) {
+        const entries = state.pickerDraft.map((c) => mapQuickEntry(crypto.randomUUID(), c, ''));
+        dispatch({ type: 'ADD_MAP_COUNTRIES', mapId: openMap.id, entries });
+        if (state.authUserId) {
+          api
+            .createEntries(state.authUserId, entries.map((e) => ({ id: e.id, fields: { ...e, mapId: openMap.id, mapNative: true } })))
+            .catch(() => dispatch({ type: 'SHOW_TOAST', message: "couldn't save those to your account — try again." }));
+        }
+      }
+      dispatch({ type: 'SAVE_PICKER' });
+      return;
+    }
     // Editing an existing map's passports (the reducer applies the same rule).
     const mapId = pk === 'mapNat' && state.overlay !== 'newMap' ? state.openMapId : null;
     const nationalities = state.pickerDraft.slice();
     dispatch({ type: 'SAVE_PICKER' });
     if (mapId) api.updateMap(mapId, { nationalities }).catch(() => dispatch({ type: 'SHOW_TOAST', message: "couldn't save that to your account." }));
   }
-  const title = isNatMode ? 'Passport' : 'Country';
+  const title = isNatMode ? 'Passport' : pk === 'mapCountries' ? `Add to ${openMap?.name || 'map'}` : 'Country';
   const q = state.pickerQuery.toLowerCase();
 
   const chosen = pk === 'country' ? state.story?.country || '' : pk === 'signupCountry' ? state.pairDraft.country : '';
@@ -35,10 +54,11 @@ export function Picker() {
   const options = PAIRS.filter((p) => (isNatMode ? p.nationality : p.country).toLowerCase().includes(q)).map((p) => {
     const label = isNatMode ? p.nationality : p.country;
     const staged = isMulti && state.pickerDraft.includes(label);
-    return { label, flag: flagOf(p.country), active: staged || label === chosen };
+    return { label, flag: flagOf(p.country), active: staged || label === chosen || locked.has(label), locked: locked.has(label) };
   });
 
   function pick(label: string) {
+    if (locked.has(label)) return;
     if (isMulti) return dispatch({ type: 'TOGGLE_PICKER_DRAFT', label });
     if (pk === 'country') return dispatch({ type: 'PICK_COUNTRY', label });
     if (pk === 'signupCountry') return dispatch({ type: 'PICK_SIGNUP_COUNTRY', label });
@@ -101,6 +121,7 @@ export function Picker() {
           >
             <span style={{ fontSize: 19, lineHeight: 1 }}>{o.flag}</span>
             <span style={{ flex: 1, font: '400 15px/1.4 Inter, sans-serif' }}>{o.label}</span>
+            {o.locked && <span style={{ font: '400 12px/1 Inter, sans-serif', color: 'var(--ink-40)' }}>on this map</span>}
             <span style={{ color: o.active ? 'var(--coral)' : 'transparent', display: 'flex' }}>
               <CheckIcon size={18} />
             </span>
@@ -113,7 +134,7 @@ export function Picker() {
             {state.pickerDraft.length ? state.pickerDraft.join(' · ') : 'nothing selected'}
           </span>
           <button onClick={save} style={primaryBtnStyle}>
-            Save
+            {pk === 'mapCountries' ? (state.pickerDraft.length ? `Add ${state.pickerDraft.length}` : 'Done') : 'Save'}
           </button>
         </div>
       )}

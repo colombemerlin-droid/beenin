@@ -12,6 +12,7 @@ import { NotificationsScreen } from './screens/NotificationsScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { AddStoryScreen } from './screens/AddStoryScreen';
 import { HistoryOverlay } from './screens/overlays/HistoryOverlay';
+import { NamesOverlay } from './screens/overlays/NamesOverlay';
 import { FriendsOverlay } from './screens/overlays/FriendsOverlay';
 import { FriendRequestsOverlay } from './screens/overlays/FriendRequestsOverlay';
 import { PersonOverlay } from './screens/overlays/PersonOverlay';
@@ -64,6 +65,7 @@ function AppShell() {
         {state.tab === 'profile' && <ProfileScreen />}
 
         <HistoryOverlay />
+        <NamesOverlay />
         <FriendsOverlay />
         <FriendRequestsOverlay />
         <PersonOverlay />
