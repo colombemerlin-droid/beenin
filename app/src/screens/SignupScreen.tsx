@@ -2,7 +2,7 @@ import { useStore } from '../state/store';
 import { signupStubs } from '../state/reducer';
 import { initialsOf } from '../lib/identity';
 import * as api from '../lib/api';
-import { flagOf } from '../data/countries';
+import { flagOf, natFlagOf } from '../data/countries';
 import { fmtDate } from '../data/format';
 import { Picker, UNKNOWN, inputStyle, primaryBtnStyle } from '../ui/Picker';
 import { fieldBtnStyle } from '../ui/formKit';
@@ -20,6 +20,8 @@ export function SignupScreen() {
   const canAdd = mapScoped ? !!d.country : !!(d.country && d.nationality.length);
   const count = g.pairs.length;
   const mapName = state.maps.find((m) => m.id === state.mapBackfillFor)?.name;
+  const last = g.pairs[g.pairs.length - 1];
+  const draftStarted = !!(d.name.trim() || d.country || d.nationality.length || d.date);
 
   const fail = () => dispatch({ type: 'SHOW_TOAST', message: "couldn't save that to your account — try again in a moment." });
 
@@ -67,59 +69,82 @@ export function SignupScreen() {
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 26, background: 'var(--cream-lighter)', display: 'flex', flexDirection: 'column' }}>
       <div style={{ flex: 'none', padding: '18px 20px 10px' }}>
-        <div className="label">{mapScoped ? `Backfill · ${mapName || 'map'}` : state.onboardingStep === 'signup' ? 'Sign up · backfill' : 'Backfill'}</div>
+        <div className="label">{mapScoped ? `Backfill · ${mapName || 'map'}` : 'Backfill'}</div>
         <div className="serif" style={{ fontSize: 26, lineHeight: 1.15, marginTop: 6 }}>
           Anything to Declare?
         </div>
         <div style={{ font: '400 13px/1.5 Inter, sans-serif', color: 'var(--ink-body)', marginTop: 6 }}>
           {mapScoped
             ? 'Countries you’ve already been to together.'
-            : 'Log where you’ve already been, and whose passport. Nothing here is shared — skip it and come back anytime from Profile.'}
+            : 'Who you’ve been with, their passport, and where. Nothing here is shared.'}
         </div>
       </div>
 
       <div className="noscroll" style={{ flex: 1, overflowY: 'auto', padding: '6px 20px 16px' }}>
-        <div style={{ background: 'var(--cream)', borderRadius: 14, padding: '14px 16px 16px' }}>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => dispatch({ type: 'OPEN_PICKER', kind: 'signupCountry' })} style={pickerFieldStyle}>
-              <span style={{ fontSize: 17, lineHeight: 1 }}>{d.country ? flagOf(d.country) : '\u{1F30D}'}</span>
-              <span style={{ flex: 1, minWidth: 0, font: '400 14px/1.4 Inter, sans-serif', color: d.country ? 'var(--ink)' : 'var(--ink-40)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {d.country || 'Country'}
-              </span>
-            </button>
+        {/* After the first entry: carry on with the same person, or start someone new. */}
+        {count > 0 && !draftStarted && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+            {!mapScoped && last?.name.trim() && (
+              <button onClick={() => dispatch({ type: 'REPEAT_PAIR_PERSON' })} style={nextChipStyle}>
+                + Another country with {last.name.trim().split(' ')[0]}
+              </button>
+            )}
             {!mapScoped && (
-              <button onClick={() => dispatch({ type: 'OPEN_PICKER', kind: 'signupNat' })} style={pickerFieldStyle}>
-                <span style={{ fontSize: 17, lineHeight: 1 }}>{d.nationality.length ? '\u{1F6C2}' : '\u{1F6C2}'}</span>
-                <span style={{ flex: 1, minWidth: 0, font: '400 14px/1.4 Inter, sans-serif', color: d.nationality.length ? 'var(--ink)' : 'var(--ink-40)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {d.nationality.length ? d.nationality.join(' · ') : 'Passport'}
-                </span>
+              <button onClick={() => document.getElementById('backfill-who')?.focus()} style={nextChipStyle}>
+                + Someone new
               </button>
             )}
           </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <input
-              type="date"
-              value={d.date}
-              onChange={(e) => dispatch({ type: 'PATCH_PAIR_DRAFT', patch: { date: e.target.value } })}
-              style={{ ...inputStyle, flex: 1, minWidth: 0, padding: '11px 12px' }}
-            />
-          </div>
+        )}
+        <div style={{ background: 'var(--cream)', borderRadius: 14, padding: '14px 16px 16px' }}>
           {!mapScoped && (
-            <PersonField
-              value={d.name}
-              people={state.companions}
-              onChange={(name) => dispatch({ type: 'PATCH_PAIR_DRAFT', patch: { name, companionId: '' } })}
-              onPick={(c) =>
-                dispatch({
-                  type: 'PATCH_PAIR_DRAFT',
-                  // A remembered person brings their passports along.
-                  patch: { name: c.name, companionId: c.id, nationality: c.nationalities.length ? c.nationalities.slice() : d.nationality },
-                })
-              }
-              placeholder="who with · optional"
-              style={{ marginTop: 8 }}
-            />
+            <>
+              <div className="label" style={fieldLabelStyle}>
+                Who · optional
+              </div>
+              <PersonField
+                id="backfill-who"
+                value={d.name}
+                people={state.companions}
+                onChange={(name) => dispatch({ type: 'PATCH_PAIR_DRAFT', patch: { name, companionId: '' } })}
+                onPick={(c) =>
+                  dispatch({
+                    type: 'PATCH_PAIR_DRAFT',
+                    // A remembered person brings their passports along.
+                    patch: { name: c.name, companionId: c.id, nationality: c.nationalities.length ? c.nationalities.slice() : d.nationality },
+                  })
+                }
+                placeholder="their name"
+              />
+              <div className="label" style={{ ...fieldLabelStyle, marginTop: 12 }}>
+                Passport
+              </div>
+              <button onClick={() => dispatch({ type: 'OPEN_PICKER', kind: 'signupNat' })} style={pickerFieldStyle}>
+                <span style={{ fontSize: 17, lineHeight: 1 }}>{d.nationality.length ? natFlagOf(d.nationality[0]) : '\u{1F6C2}'}</span>
+                <span style={{ flex: 1, minWidth: 0, font: '400 14px/1.4 Inter, sans-serif', color: d.nationality.length ? 'var(--ink)' : 'var(--ink-40)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {d.nationality.length ? d.nationality.join(' · ') : 'one or more'}
+                </span>
+              </button>
+            </>
           )}
+          <div className="label" style={{ ...fieldLabelStyle, marginTop: mapScoped ? 0 : 12 }}>
+            Country
+          </div>
+          <button onClick={() => dispatch({ type: 'OPEN_PICKER', kind: 'signupCountry' })} style={pickerFieldStyle}>
+            <span style={{ fontSize: 17, lineHeight: 1 }}>{d.country ? flagOf(d.country) : '\u{1F30D}'}</span>
+            <span style={{ flex: 1, minWidth: 0, font: '400 14px/1.4 Inter, sans-serif', color: d.country ? 'var(--ink)' : 'var(--ink-40)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {d.country || 'where'}
+            </span>
+          </button>
+          <div className="label" style={{ ...fieldLabelStyle, marginTop: 12 }}>
+            First interaction · optional
+          </div>
+          <input
+            type="date"
+            value={d.date}
+            onChange={(e) => dispatch({ type: 'PATCH_PAIR_DRAFT', patch: { date: e.target.value } })}
+            style={{ ...inputStyle, padding: '11px 12px' }}
+          />
 
           <button
             onClick={() => dispatch({ type: 'TOGGLE_PAIR_EXPANDED' })}
@@ -214,11 +239,10 @@ export function SignupScreen() {
             <span style={{ fontSize: 18, lineHeight: 1, flex: 'none' }}>{flagOf(p.country)}</span>
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: 'block', font: '400 15px/1.4 Inter, sans-serif' }}>
-                {p.country}
-                {p.nationality.length ? ` · ${p.nationality.join(' · ')}` : ''}
+                {p.name.trim() ? `${p.name.trim()} · ${p.country}` : p.country}
               </span>
               <span style={{ display: 'block', font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 2 }}>
-                {[p.date ? fmtDate(p.date) : '', p.name, p.expanded ? 'details added' : ''].filter(Boolean).join(' · ') || 'no details'}
+                {[p.nationality.join(' · '), p.date ? `first ${fmtDate(p.date)}` : '', p.expanded ? 'details added' : ''].filter(Boolean).join(' · ') || 'no details'}
               </span>
             </span>
             <button
@@ -235,7 +259,7 @@ export function SignupScreen() {
 
       <div className="bottom-safe" style={{ flex: 'none', padding: '12px 20px 34px', borderTop: '1px solid var(--stone)', display: 'flex', alignItems: 'center', gap: 10 }}>
         <button onClick={skip} style={{ padding: '14px 16px', borderRadius: 8, border: 0, background: 'transparent', color: 'var(--ink-body)', font: '500 14px/1 Inter, sans-serif', cursor: 'pointer' }}>
-          Skip
+          Cancel
         </button>
         <span style={{ flex: 1, font: '400 12px/1.4 Inter, sans-serif', color: 'var(--ink-40)', textAlign: 'right' }}>
           {count ? `${count} on the record` : 'nothing added yet'}
@@ -251,7 +275,7 @@ export function SignupScreen() {
 }
 
 const pickerFieldStyle = {
-  flex: 1,
+  width: '100%',
   minWidth: 0,
   display: 'flex',
   alignItems: 'center',
@@ -263,4 +287,16 @@ const pickerFieldStyle = {
   cursor: 'pointer',
   textAlign: 'left',
   color: 'var(--ink)',
+} as const;
+
+const fieldLabelStyle = { marginBottom: 6 } as const;
+
+const nextChipStyle = {
+  padding: '9px 13px',
+  borderRadius: 999,
+  border: '1px dashed var(--coral)',
+  background: 'var(--coral-tint)',
+  cursor: 'pointer',
+  color: 'var(--coral-dark)',
+  font: '600 13px/1.2 Inter, sans-serif',
 } as const;

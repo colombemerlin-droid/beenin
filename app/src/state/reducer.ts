@@ -168,7 +168,7 @@ export function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, authLoading: false, signedIn: false };
 
     case 'HYDRATE_SESSION': {
-      const step = !action.handleSet ? 'handle' : !action.onboarded ? 'signup' : 'done';
+      const step = action.handleSet ? 'done' : 'handle';
       return {
         ...withServerData(state, action),
         authLoading: false,
@@ -178,7 +178,6 @@ export function reducer(state: AppState, action: AppAction): AppState {
         onboardingStep: step,
         handleDraft: '',
         handleError: '',
-        signup: step === 'signup' ? { pairs: [] } : null,
       };
     }
 
@@ -192,13 +191,10 @@ export function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, handleDraft: action.value, handleError: '' };
 
     case 'SET_HANDLE':
-      return { ...state, profile: { ...state.profile, handle: action.handle }, onboardingStep: 'signup', signup: { pairs: [] }, handleDraft: '', handleError: '' };
+      return { ...state, profile: { ...state.profile, handle: action.handle }, onboardingStep: 'done', handleDraft: '', handleError: '' };
 
     case 'HANDLE_ERROR':
       return { ...state, handleError: action.message };
-
-    case 'ONBOARDING_DONE':
-      return { ...state, onboardingStep: 'done' };
 
     case 'START_SIGNUP':
       return { ...state, signup: { pairs: [] }, pairDraft: emptyPairDraft(), mapBackfillFor: null };
@@ -458,9 +454,9 @@ export function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, overlay: 'names' };
 
     case 'OPEN_COMPANION_MENU': {
-      const c = state.companions.find((x) => x.id === action.id);
-      if (!c) return state;
-      return { ...state, sheet: { title: c.name, actions: [{ label: 'Edit', kind: 'editCompanion' }] }, sheetTarget: c.id };
+      const name = state.companions.find((x) => x.id === action.id)?.name || state.maps.find((x) => x.id === action.id)?.name;
+      if (!name) return state;
+      return { ...state, sheet: { title: name, actions: [{ label: 'Edit', kind: 'editCompanion' }] }, sheetTarget: action.id };
     }
 
     case 'PATCH_COMPANION_EDIT':
@@ -468,6 +464,17 @@ export function reducer(state: AppState, action: AppAction): AppState {
 
     case 'CLOSE_COMPANION_EDIT':
       return { ...state, companionEdit: null };
+
+    case 'UPDATE_MAP': {
+      const maps = state.maps.map((m) => (m.id === action.id ? { ...m, name: action.name, nationalities: action.nationalities } : m));
+      return withToast({ ...state, maps, companionEdit: null }, 'saved.');
+    }
+
+    case 'REPEAT_PAIR_PERSON': {
+      const last = state.signup?.pairs[state.signup.pairs.length - 1];
+      if (!last) return state;
+      return { ...state, pairDraft: { ...emptyPairDraft(), name: last.name, companionId: last.companionId, nationality: last.nationality.slice() } };
+    }
 
     case 'UPDATE_COMPANION': {
       const c = action.companion;
@@ -557,7 +564,10 @@ export function reducer(state: AppState, action: AppAction): AppState {
       if (action.kind === 'report') return withToast(cleared, 'reported. we’ll take it from here — quietly.');
       if (action.kind === 'editCompanion') {
         const c = cleared.companions.find((x) => x.id === id);
-        return c ? { ...cleared, companionEdit: { id: c.id, name: c.name, nationalities: c.nationalities.slice() } } : cleared;
+        if (c) return { ...cleared, companionEdit: { kind: 'companion', id: c.id, name: c.name, nationalities: c.nationalities.slice() } };
+        const m = cleared.maps.find((x) => x.id === id);
+        if (m) return { ...cleared, companionEdit: { kind: 'map', id: m.id, name: m.name, nationalities: m.nationalities.slice() } };
+        return cleared;
       }
       if (action.kind === 'unfriend') {
         // Friendship is one shared link: removing it unlinks both sides at once.

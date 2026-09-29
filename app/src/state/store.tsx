@@ -175,15 +175,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [refresh]);
 
-  // First time a signed-in user finishes the initial backfill/signup step,
-  // mark it done server-side so returning sign-ins skip straight to the app.
-  useEffect(() => {
-    if (state.onboardingStep === 'signup' && state.signup === null && state.authUserId) {
-      const userId = state.authUserId;
-      api.markOnboarded(userId).catch(() => {});
-      dispatch({ type: 'ONBOARDING_DONE' });
-    }
-  }, [state.onboardingStep, state.signup, state.authUserId]);
 
   return <StoreContext.Provider value={{ state, dispatch, refresh }}>{children}</StoreContext.Provider>;
 }

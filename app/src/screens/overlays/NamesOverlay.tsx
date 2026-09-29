@@ -8,50 +8,58 @@ import { EmptyState } from '../../ui/EmptyState';
 import { Picker, inputStyle, primaryBtnStyle } from '../../ui/Picker';
 import { chipStyle, dashedChipStyle } from '../../ui/formKit';
 import { DotsIcon } from '../../ui/icons';
+import { nameRows, sameName } from '../../state/selectors';
 
-// Profile → Names: everyone you've logged, with their passport(s) and the
-// countries you've been to together. Each can be renamed / re-passported.
+// Profile → Names: everyone you've logged — remembered people, and the person
+// behind each relationship map — with their passport(s) and the countries
+// you've been to together. Each can be renamed / re-passported.
 export function NamesOverlay() {
   const { state, dispatch } = useStore();
   if (state.overlay !== 'names') return null;
 
-  const people = state.companions.slice().sort((a, b) => a.name.localeCompare(b.name));
+  const people = nameRows(state);
 
   return (
     <div className="noscroll" style={{ position: 'absolute', inset: 0, background: 'var(--cream-lighter)', zIndex: 40, overflowY: 'auto' }}>
       <OverlayHeader title="Names" onBack={() => dispatch({ type: 'CLOSE_OVERLAY' })} />
       <div style={{ padding: '14px 20px 120px' }}>
         {people.length === 0 ? (
-          <EmptyState title="Nobody yet" body="People you add to a story or a backfill show up here." />
+          <EmptyState title="Nobody yet" body="People you add to a story, a backfill or a map show up here." />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {people.map((c) => {
-              const countries = [...new Set(state.entries.filter((e) => e.companionId === c.id && e.country).map((e) => e.country))].sort();
-              return (
-                <div
-                  key={c.id}
-                  style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 10px 12px 14px', borderRadius: 14, background: 'var(--cream)' }}
-                >
-                  <Avatar token={c.initials} size={38} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ font: '600 15px/1.3 Inter, sans-serif' }}>{c.name}</div>
-                    <div style={{ font: '400 12px/1.45 Inter, sans-serif', color: 'var(--ink-body)', marginTop: 2 }}>
-                      {c.nationalities.length ? c.nationalities.map((n) => `${natFlagOf(n)} ${n}`).join('  ·  ') : 'no passport logged'}
-                    </div>
-                    <div style={{ font: '400 12px/1.45 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 2 }}>
-                      {countries.length ? `been in ${countries.map((x) => `${flagOf(x)} ${x}`).join(', ')}` : 'no countries together yet'}
-                    </div>
+            {people.map((p) => (
+              <div key={p.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 10px 14px 14px', borderRadius: 14, background: 'var(--cream)' }}>
+                <Avatar token={p.initials} size={38} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ font: '600 15px/1.3 Inter, sans-serif' }}>{p.name}</span>
+                    {p.hasMap && <span style={{ font: '500 11px/1 Inter, sans-serif', color: 'var(--ink-40)' }}>· own map</span>}
                   </div>
-                  <button
-                    onClick={() => dispatch({ type: 'OPEN_COMPANION_MENU', id: c.id })}
-                    aria-label={`Options for ${c.name}`}
-                    style={{ width: 32, height: 32, flex: 'none', background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--ink-40)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  >
-                    <DotsIcon />
-                  </button>
+                  <div style={{ font: '400 12px/1.45 Inter, sans-serif', color: 'var(--ink-body)', marginTop: 2 }}>
+                    {p.nationalities.length ? p.nationalities.map((n) => `${natFlagOf(n)} ${n}`).join('  ·  ') : 'no passport logged'}
+                  </div>
+                  {p.countries.length ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                      {p.countries.map((x) => (
+                        <span key={x} style={countryChipStyle}>
+                          <span style={{ fontSize: 12, lineHeight: 1 }}>{flagOf(x)}</span>
+                          <span>{x}</span>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ font: '400 12px/1.45 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 2 }}>no countries together yet</div>
+                  )}
                 </div>
-              );
-            })}
+                <button
+                  onClick={() => dispatch({ type: 'OPEN_COMPANION_MENU', id: p.id })}
+                  aria-label={`Options for ${p.name}`}
+                  style={{ width: 32, height: 32, flex: 'none', background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--ink-40)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <DotsIcon />
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -59,6 +67,9 @@ export function NamesOverlay() {
     </div>
   );
 }
+
+// The passport bubble, a size down for a list row.
+const countryChipStyle = { ...chipStyle, gap: 5, padding: '5px 10px', cursor: 'default', font: '500 12px/1.3 Inter, sans-serif' } as const;
 
 function EditPerson() {
   const { state, dispatch } = useStore();
@@ -68,11 +79,18 @@ function EditPerson() {
 
   function save() {
     if (!d || !name) return;
+    const fail = () => dispatch({ type: 'SHOW_TOAST', message: "couldn't save that to your account — try again." });
+    const saveMap = (id: string) => {
+      dispatch({ type: 'UPDATE_MAP', id, name, nationalities: d.nationalities });
+      if (state.authUserId) api.updateMap(id, { name, nationalities: d.nationalities }).catch(fail);
+    };
+    if (d.kind === 'map') return saveMap(d.id);
+    const before = state.companions.find((c) => c.id === d.id);
+    const linkedMap = before && state.maps.find((m) => sameName(m.name, before.name));
     const companion = { id: d.id, name, initials: initialsOf(name) || '??', nationalities: d.nationalities };
     dispatch({ type: 'UPDATE_COMPANION', companion });
-    if (state.authUserId) {
-      api.updateCompanion(companion).catch(() => dispatch({ type: 'SHOW_TOAST', message: "couldn't save that to your account — try again." }));
-    }
+    if (state.authUserId) api.updateCompanion(companion).catch(fail);
+    if (linkedMap) saveMap(linkedMap.id);
   }
 
   return (
@@ -103,7 +121,9 @@ function EditPerson() {
           </button>
         </div>
         <div style={{ font: '400 12px/1.5 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 14 }}>
-          Your stories with them update too — including the name friends see on shared posts.
+          {d.kind === 'map'
+            ? 'This renames their map and updates its passports.'
+            : 'Your stories with them update too — including the name friends see on shared posts.'}
         </div>
       </div>
       <div className="bottom-safe" style={{ flex: 'none', padding: '14px 20px 34px', borderTop: '1px solid var(--stone)' }}>

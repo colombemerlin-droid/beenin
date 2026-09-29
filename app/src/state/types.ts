@@ -91,7 +91,10 @@ export interface SheetState {
   actions: SheetAction[];
 }
 
+// Profile → Names edits a remembered person, or a relationship map's person
+// (its name + passports). A person whose name matches a map edits both.
 export interface CompanionEdit {
+  kind: 'companion' | 'map';
   id: string;
   name: string;
   nationalities: string[];
@@ -102,7 +105,7 @@ export interface Profile {
   handle: string;
 }
 
-export type OnboardingStep = 'handle' | 'signup' | 'done';
+export type OnboardingStep = 'handle' | 'done';
 
 // Everything the account holds on the server, as the viewer sees it.
 export interface ServerData {
@@ -118,8 +121,8 @@ export interface AppState {
   authLoading: boolean;
   authUserId: string | null;
   signedIn: boolean;
-  // Where a signed-in user is in first-run onboarding: pick a handle, then
-  // run the country-backfill (signup) flow, then done. Irrelevant once 'done'.
+  // First-run onboarding: pick a handle, then straight into the app. (Backfill
+  // is only offered from Profile.)
   onboardingStep: OnboardingStep;
   handleDraft: string;
   handleError: string;
@@ -192,7 +195,6 @@ export type AppAction =
   | { type: 'PATCH_HANDLE_DRAFT'; value: string }
   | { type: 'SET_HANDLE'; handle: string }
   | { type: 'HANDLE_ERROR'; message: string }
-  | { type: 'ONBOARDING_DONE' }
   | { type: 'START_SIGNUP' }
   | { type: 'PATCH_PAIR_DRAFT'; patch: Partial<SignupPair> }
   | { type: 'TOGGLE_PAIR_EXPANDED' }
@@ -219,6 +221,9 @@ export type AppAction =
   | { type: 'PATCH_COMPANION_EDIT'; patch: Partial<CompanionEdit> }
   | { type: 'CLOSE_COMPANION_EDIT' }
   | { type: 'UPDATE_COMPANION'; companion: Companion }
+  | { type: 'UPDATE_MAP'; id: string; name: string; nationalities: string[] }
+  // Backfill: start the next entry with the same person (and passports) as the last one.
+  | { type: 'REPEAT_PAIR_PERSON' }
   | { type: 'OPEN_PICKER'; kind: PickerKind }
   | { type: 'SET_PICKER_QUERY'; query: string }
   | { type: 'PICK_COUNTRY'; label: string }

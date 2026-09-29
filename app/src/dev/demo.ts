@@ -1,6 +1,6 @@
 // Development-only sample account, for visual QA without signing in.
-// Enabled by opening the dev server with `?demo` (or `?demo=handle` /
-// `?demo=signup` for the onboarding steps). `import.meta.env.DEV` is false in
+// Enabled by opening the dev server with `?demo` (or `?demo=handle` for the
+// onboarding step). `import.meta.env.DEV` is false in
 // production builds, so none of this ships.
 import { ME_KEY } from '../lib/identity';
 import type { Entry, Companion, Friend, FriendPost } from '../types';
@@ -10,7 +10,7 @@ export function demoStep(): OnboardingStep | null {
   if (!import.meta.env.DEV) return null;
   const v = new URLSearchParams(window.location.search).get('demo');
   if (v === null) return null;
-  return v === 'handle' ? 'handle' : v === 'signup' ? 'signup' : 'done';
+  return v === 'handle' ? 'handle' : 'done';
 }
 
 const DAY = 86_400_000;

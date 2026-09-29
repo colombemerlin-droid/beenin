@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '../state/store';
 import { pct } from '../data/countries';
-import { beenCountries, natCountries } from '../state/selectors';
+import { beenCountries, natCountries, nameRows } from '../state/selectors';
 import { initialsOf } from '../lib/identity';
 import { ChevronRightIcon, TabProfileIcon } from '../ui/icons';
 import * as api from '../lib/api';
@@ -16,6 +16,7 @@ export function ProfileScreen() {
   const friendCount = state.friends.filter((f) => f.requestState === 'accepted').length;
   const initials = initialsOf(state.profile.name);
   const hasLogged = been.length > 0 || nats.length > 0;
+  const namesCount = nameRows(state).length;
 
   function startEdit() {
     setDraft(state.profile.name);
@@ -120,7 +121,7 @@ export function ProfileScreen() {
 
       <button onClick={() => dispatch({ type: 'OPEN_NAMES' })} style={{ ...navRowStyle, marginTop: 10 }}>
         <span style={{ flex: 1, font: '600 17px/1.3 Inter, sans-serif' }}>Names</span>
-        {state.companions.length > 0 && <span style={{ font: '400 13px/1 Inter, sans-serif', color: 'var(--ink-40)' }}>{state.companions.length}</span>}
+        {namesCount > 0 && <span style={{ font: '400 13px/1 Inter, sans-serif', color: 'var(--ink-40)' }}>{namesCount}</span>}
         <ChevronRightIcon size={19} color="#A39A92" />
       </button>
 

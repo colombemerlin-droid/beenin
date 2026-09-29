@@ -1,6 +1,6 @@
 import { byCountry, natToCountry, CONTINENTS, pct, type ContinentCode } from '../data/countries';
-import { ME_KEY } from '../lib/identity';
-import type { AppState } from './types';
+import { ME_KEY, initialsOf } from '../lib/identity';
+import type { AppState, GroupMap } from './types';
 import type { Entry, NotificationItem } from '../types';
 
 export function beenCountries(state: AppState): string[] {
@@ -138,3 +138,38 @@ export function notificationFeed(state: AppState): NotificationItem[] {
 }
 
 export { pct };
+
+// Profile → Names: remembered people, plus the person behind each
+// relationship map (merged when the map is named after them).
+export interface NameRow {
+  id: string; // companion id, or map id for a map with no matching person
+  name: string;
+  initials: string;
+  nationalities: string[];
+  countries: string[];
+  hasMap: boolean;
+}
+
+const norm = (name: string) => name.trim().toLowerCase();
+
+// A map named after a remembered person is that person's map.
+export function sameName(a: string, b: string): boolean {
+  return norm(a) === norm(b);
+}
+
+export function nameRows(state: AppState): NameRow[] {
+  const mapCountries = (m: GroupMap) => [...m.entries, ...state.entries.filter((e) => e.mapId === m.id)].map((e) => e.country);
+  const unique = (xs: string[]) => [...new Set(xs.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const rows: NameRow[] = state.companions.map((c) => {
+    // A map named after this person is theirs too.
+    const map = state.maps.find((m) => norm(m.name) === norm(c.name));
+    const stories = state.entries.filter((e) => e.companionId === c.id).map((e) => e.country);
+    return { id: c.id, name: c.name, initials: c.initials, nationalities: c.nationalities, countries: unique([...stories, ...(map ? mapCountries(map) : [])]), hasMap: !!map };
+  });
+  const named = new Set(state.companions.map((c) => norm(c.name)));
+  for (const m of state.maps) {
+    if (named.has(norm(m.name))) continue;
+    rows.push({ id: m.id, name: m.name, initials: initialsOf(m.name) || '??', nationalities: m.nationalities, countries: unique(mapCountries(m)), hasMap: true });
+  }
+  return rows.sort((a, b) => a.name.localeCompare(b.name));
+}

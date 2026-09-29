@@ -28,7 +28,7 @@ export function NewMapOverlay() {
       <OverlayHeader title="New map" onBack={() => dispatch({ type: 'CANCEL_NEW_MAP' })} />
       <div style={{ flex: 1, padding: '18px 20px 24px' }}>
         <div className="serif" style={{ fontSize: 24, lineHeight: 1.2 }}>
-          Create a brand new map, for you and your partner.
+          Create a brand new private map, for you and your partner.
         </div>
 
         <div className="label" style={{ margin: '22px 0 8px' }}>

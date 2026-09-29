@@ -8,6 +8,7 @@ import type { Companion } from '../types';
 // typing (never a list that's always showing); tapping one picks that person.
 // Whatever doesn't match anyone simply stands as a new name.
 export function PersonField({
+  id,
   value,
   people,
   onChange,
@@ -15,6 +16,7 @@ export function PersonField({
   placeholder,
   style,
 }: {
+  id?: string;
   value: string;
   people: Companion[];
   onChange: (text: string) => void;
@@ -32,6 +34,7 @@ export function PersonField({
   return (
     <div style={{ position: 'relative', ...style }}>
       <input
+        id={id}
         value={value}
         onChange={(e) => {
           onChange(e.target.value);

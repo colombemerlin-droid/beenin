@@ -101,17 +101,14 @@ export async function claimHandle(userId: string, handle: string): Promise<void>
   if (!isValidHandle(clean)) {
     throw new Error('handles are 3-20 characters: lowercase letters, numbers, underscore.');
   }
-  const { error } = await supabase.from('profiles').update({ handle: clean, handle_set: true }).eq('id', userId);
+  // Picking a handle is the whole of onboarding now (backfill lives in Profile).
+  const { error } = await supabase.from('profiles').update({ handle: clean, handle_set: true, onboarded: true }).eq('id', userId);
   if (error) {
     if (error.code === '23505') throw new Error(`@${clean} is already taken — try another.`);
     throw error;
   }
 }
 
-export async function markOnboarded(userId: string): Promise<void> {
-  const { error } = await supabase.from('profiles').update({ onboarded: true }).eq('id', userId);
-  check(error);
-}
 
 export function updateDisplayName(userId: string, name: string): Promise<void> {
   return track(
