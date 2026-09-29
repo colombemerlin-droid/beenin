@@ -1,8 +1,9 @@
-import { today } from '../data/format';
+import { today, plural } from '../data/format';
 import { ME_KEY } from '../lib/identity';
 import type { AppAction, AppState, SignupPair, GroupMap, StoryDraft, ServerData } from './types';
 import type { Entry } from '../types';
 import type { EntryFields } from '../lib/api';
+import { personFootprint } from './selectors';
 
 function emptyPairDraft(): SignupPair {
   return { id: crypto.randomUUID(), country: '', nationality: [], date: '', name: '', companionId: '', expanded: false, place: '', note: '', emoji: '', photoPath: '' };
@@ -456,7 +457,17 @@ export function reducer(state: AppState, action: AppAction): AppState {
     case 'OPEN_COMPANION_MENU': {
       const name = state.companions.find((x) => x.id === action.id)?.name || state.maps.find((x) => x.id === action.id)?.name;
       if (!name) return state;
-      return { ...state, sheet: { title: name, actions: [{ label: 'Edit', kind: 'editCompanion' }] }, sheetTarget: action.id };
+      return {
+        ...state,
+        sheet: {
+          title: name,
+          actions: [
+            { label: 'Edit', kind: 'editCompanion' },
+            { label: 'Delete', color: '#B23B2A', kind: 'deleteCompanion' },
+          ],
+        },
+        sheetTarget: action.id,
+      };
     }
 
     case 'PATCH_COMPANION_EDIT':
@@ -568,6 +579,40 @@ export function reducer(state: AppState, action: AppAction): AppState {
         const m = cleared.maps.find((x) => x.id === id);
         if (m) return { ...cleared, companionEdit: { kind: 'map', id: m.id, name: m.name, nationalities: m.nationalities.slice() } };
         return cleared;
+      }
+      if (action.kind === 'deleteCompanion') {
+        const f = personFootprint(cleared, id);
+        if (!f) return cleared;
+        const n = f.entryIds.length;
+        // "Marco and 1 story" / "Marco, 2 stories and their map"
+        const items = [f.name, n ? plural(n, 'story', 'stories') : '', f.mapId ? 'their map' : ''].filter(Boolean);
+        const what = items.length < 3 ? items.join(' and ') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+        return {
+          ...cleared,
+          sheet: {
+            title: `Delete ${what}? Countries only logged through them come off your map. This can’t be undone.`,
+            actions: [{ label: `Delete ${f.name}`, color: '#B23B2A', kind: 'confirmDeleteCompanion' }],
+          },
+          sheetTarget: id,
+        };
+      }
+      if (action.kind === 'confirmDeleteCompanion') {
+        const f = personFootprint(cleared, id);
+        if (!f) return cleared;
+        const gone = new Set(f.entryIds);
+        const entries = cleared.entries
+          .filter((e) => !gone.has(e.id))
+          // Other people's stories that linked to the deleted map just lose the link.
+          .map((e) => (f.mapId && e.mapId === f.mapId ? { ...e, mapId: undefined } : e));
+        const next = {
+          ...cleared,
+          entries,
+          companions: cleared.companions.filter((c) => c.id !== f.companionId),
+          maps: cleared.maps.filter((m) => m.id !== f.mapId),
+          openMapId: cleared.openMapId === f.mapId ? null : cleared.openMapId,
+          detailOn: cleared.detailOn && !gone.has(cleared.detailId || ''),
+        };
+        return withToast(next, `deleted ${f.name}.`);
       }
       if (action.kind === 'unfriend') {
         // Friendship is one shared link: removing it unlinks both sides at once.

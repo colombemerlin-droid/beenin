@@ -230,6 +230,30 @@ export function updateCompanion(c: Companion): Promise<void> {
   );
 }
 
+// Deletes a person from Names and everything logged only through them. Stories
+// go first: their foreign keys would otherwise just be set to null, leaving
+// orphans. Kudos and comments on those stories cascade with them.
+export function deletePerson(p: { companionId?: string; mapId?: string; photoPaths: string[] }): Promise<void> {
+  return track(
+    (async () => {
+      await ready(p.companionId, p.mapId);
+      if (p.companionId) {
+        const r1 = await supabase.from('entries').delete().eq('companion_id', p.companionId);
+        check(r1.error);
+        const r2 = await supabase.from('companions').delete().eq('id', p.companionId);
+        check(r2.error);
+      }
+      if (p.mapId) {
+        const r3 = await supabase.from('entries').delete().eq('map_id', p.mapId).eq('map_native', true);
+        check(r3.error);
+        const r4 = await supabase.from('group_maps').delete().eq('id', p.mapId);
+        check(r4.error);
+      }
+      if (p.photoPaths.length) await supabase.storage.from('photos').remove(p.photoPaths);
+    })()
+  );
+}
+
 export function createMap(userId: string, m: { id: string; name: string; nationalities: string[] }): Promise<void> {
   const p = (async () => {
     const { error } = await supabase.from('group_maps').insert({ id: m.id, owner_id: userId, name: m.name, nationalities: m.nationalities });

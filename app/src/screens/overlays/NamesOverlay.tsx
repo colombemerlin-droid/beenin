@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { useStore } from '../../state/store';
+import { plural } from '../../data/format';
 import * as api from '../../lib/api';
 import { initialsOf } from '../../lib/identity';
 import { flagOf, natFlagOf } from '../../data/countries';
@@ -15,16 +17,51 @@ import { nameRows, sameName } from '../../state/selectors';
 // you've been to together. Each can be renamed / re-passported.
 export function NamesOverlay() {
   const { state, dispatch } = useStore();
+  const [view, setView] = useState<'all' | 'beenIn'>('all');
   if (state.overlay !== 'names') return null;
 
-  const people = nameRows(state);
+  const all = nameRows(state);
+  const beenIn = all.filter((p) => p.countries.length > 0);
+  const people = view === 'all' ? all : beenIn;
 
   return (
     <div className="noscroll" style={{ position: 'absolute', inset: 0, background: 'var(--cream-lighter)', zIndex: 40, overflowY: 'auto' }}>
       <OverlayHeader title="Names" onBack={() => dispatch({ type: 'CLOSE_OVERLAY' })} />
       <div style={{ padding: '14px 20px 120px' }}>
+        <div role="tablist" style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 999, background: 'var(--cream)', marginBottom: 14 }}>
+          {(
+            [
+              ['all', 'All names', all.length],
+              ['beenIn', 'Been In', beenIn.length],
+            ] as const
+          ).map(([key, label, n]) => (
+            <button
+              key={key}
+              role="tab"
+              aria-selected={view === key}
+              onClick={() => setView(key)}
+              style={{
+                flex: 1,
+                padding: '9px 10px',
+                borderRadius: 999,
+                border: 0,
+                cursor: 'pointer',
+                background: view === key ? 'var(--paper)' : 'transparent',
+                boxShadow: view === key ? '0 1px 2px rgba(31,26,23,.08)' : 'none',
+                color: view === key ? 'var(--ink)' : 'var(--ink-40)',
+                font: '600 13px/1 Inter, sans-serif',
+              }}
+            >
+              {label} · {n}
+            </button>
+          ))}
+        </div>
         {people.length === 0 ? (
-          <EmptyState title="Nobody yet" body="People you add to a story, a backfill or a map show up here." />
+          view === 'all' ? (
+            <EmptyState title="Nobody yet" body="People you add to a story, a backfill or a map show up here." />
+          ) : (
+            <EmptyState title="No Been In yet" body="People you’ve logged a country with — a Been In story, a backfill, or their map — show up here." />
+          )
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {people.map((p) => (
@@ -48,7 +85,9 @@ export function NamesOverlay() {
                       ))}
                     </div>
                   ) : (
-                    <div style={{ font: '400 12px/1.45 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 2 }}>no countries together yet</div>
+                    <div style={{ font: '400 12px/1.45 Inter, sans-serif', color: 'var(--ink-40)', marginTop: 2 }}>
+                      {p.stories ? `${plural(p.stories, 'story', 'stories')} · no Been In yet` : 'nothing logged yet'}
+                    </div>
                   )}
                 </div>
                 <button

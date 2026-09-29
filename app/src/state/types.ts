@@ -83,7 +83,19 @@ export type DetailKind = 'mine' | 'feed' | null;
 export interface SheetAction {
   label: string;
   color?: string;
-  kind: 'edit' | 'vis' | 'del' | 'report' | 'addmap' | 'mapRename' | 'mapNats' | 'mapBackfill' | 'unfriend' | 'editCompanion';
+  kind:
+    | 'edit'
+    | 'vis'
+    | 'del'
+    | 'report'
+    | 'addmap'
+    | 'mapRename'
+    | 'mapNats'
+    | 'mapBackfill'
+    | 'unfriend'
+    | 'editCompanion'
+    | 'deleteCompanion' // asks to confirm…
+    | 'confirmDeleteCompanion'; // …then deletes the person and everything logged only through them
 }
 
 export interface SheetState {

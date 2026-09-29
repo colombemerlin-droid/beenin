@@ -146,7 +146,8 @@ export interface NameRow {
   name: string;
   initials: string;
   nationalities: string[];
-  countries: string[];
+  countries: string[]; // "Been In": countries logged with them (stories, backfill, their map)
+  stories: number; // everything logged with them, of any kind
   hasMap: boolean;
 }
 
@@ -157,19 +158,68 @@ export function sameName(a: string, b: string): boolean {
   return norm(a) === norm(b);
 }
 
+function mapCountries(state: AppState, m: GroupMap): string[] {
+  return [...m.entries, ...state.entries.filter((e) => e.mapId === m.id)].map((e) => e.country);
+}
+
+const unique = (xs: string[]) => [...new Set(xs.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+// Everyone logged: any history at all keeps a person here — a "We met", a plain
+// story, a backfill, a map. The "Been In" view is the subset with countries.
 export function nameRows(state: AppState): NameRow[] {
-  const mapCountries = (m: GroupMap) => [...m.entries, ...state.entries.filter((e) => e.mapId === m.id)].map((e) => e.country);
-  const unique = (xs: string[]) => [...new Set(xs.filter(Boolean))].sort((a, b) => a.localeCompare(b));
   const rows: NameRow[] = state.companions.map((c) => {
-    // A map named after this person is theirs too.
-    const map = state.maps.find((m) => norm(m.name) === norm(c.name));
-    const stories = state.entries.filter((e) => e.companionId === c.id).map((e) => e.country);
-    return { id: c.id, name: c.name, initials: c.initials, nationalities: c.nationalities, countries: unique([...stories, ...(map ? mapCountries(map) : [])]), hasMap: !!map };
+    const map = state.maps.find((m) => sameName(m.name, c.name));
+    const theirs = state.entries.filter((e) => e.companionId === c.id);
+    return {
+      id: c.id,
+      name: c.name,
+      initials: c.initials,
+      nationalities: c.nationalities,
+      countries: unique([...theirs.map((e) => e.country), ...(map ? mapCountries(state, map) : [])]),
+      stories: theirs.length + (map ? map.entries.length : 0),
+      hasMap: !!map,
+    };
   });
   const named = new Set(state.companions.map((c) => norm(c.name)));
   for (const m of state.maps) {
     if (named.has(norm(m.name))) continue;
-    rows.push({ id: m.id, name: m.name, initials: initialsOf(m.name) || '??', nationalities: m.nationalities, countries: unique(mapCountries(m)), hasMap: true });
+    rows.push({
+      id: m.id,
+      name: m.name,
+      initials: initialsOf(m.name) || '??',
+      nationalities: m.nationalities,
+      countries: unique(mapCountries(state, m)),
+      stories: m.entries.length,
+      hasMap: true,
+    });
   }
   return rows.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// Everything that goes when a person is deleted from Names: the remembered
+// person, every story/backfill logged with them, and their map (named after
+// them, or the map itself for a map-only person) with the countries on it.
+export interface PersonFootprint {
+  name: string;
+  companionId?: string;
+  mapId?: string;
+  entryIds: string[]; // their personal stories and backfills
+  mapEntryIds: string[]; // countries logged on their map
+  photoPaths: string[];
+}
+
+export function personFootprint(state: AppState, id: string): PersonFootprint | null {
+  const c = state.companions.find((x) => x.id === id);
+  const map = c ? state.maps.find((m) => sameName(m.name, c.name)) : state.maps.find((m) => m.id === id);
+  if (!c && !map) return null;
+  const stories = c ? state.entries.filter((e) => e.companionId === c.id) : [];
+  const mapEntries = map ? map.entries : [];
+  return {
+    name: c?.name || map!.name,
+    companionId: c?.id,
+    mapId: map?.id,
+    entryIds: stories.map((e) => e.id),
+    mapEntryIds: mapEntries.map((e) => e.id),
+    photoPaths: [...stories, ...mapEntries].map((e) => e.photoPath).filter(Boolean),
+  };
 }
