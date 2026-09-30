@@ -54,16 +54,24 @@ export interface SignupState {
   pairs: SignupPair[];
 }
 
+// A relationship map: a map for you and one person. Countries logged with that
+// person (stories, backfills, "Add countries") are ordinary entries and outlive
+// the map. `entries` only holds countries of older maps that have no person.
 export interface GroupMap {
   id: string;
   name: string;
-  nationalities: string[];
+  companionId?: string; // who it's with
+  nationalities: string[]; // the person's passports (kept for maps without a person)
   entries: Entry[];
 }
 
 export interface NewMapDraft {
   id: string; // assigned up front so the commit and the server row share it
-  name: string;
+  name: string; // the map's name
+  // Who it's with: a remembered person picked from the dropdown, or a new name
+  // with `nationalities` for their passports.
+  personName: string;
+  companionId: string;
   nationalities: string[];
 }
 
@@ -99,6 +107,8 @@ export interface SheetAction {
     | 'mapBackfill'
     | 'unfriend'
     | 'editCompanion'
+    | 'deleteMap' // asks to confirm…
+    | 'confirmDeleteMap' // …then removes only the map, keeping everything logged
     | 'deleteCompanion' // asks to confirm…
     | 'confirmDeleteCompanion'; // …then deletes the person and everything logged only through them
 }
@@ -276,14 +286,15 @@ export type AppAction =
   | { type: 'CLEAR_TOAST'; token: number }
   | { type: 'OPEN_NEW_MAP' }
   | { type: 'PATCH_NEW_MAP'; patch: Partial<NewMapDraft> }
-  // New map → Create: the map is created and opened straight away.
-  | { type: 'CREATE_MAP'; entries: Entry[] }
+  // New map → Create: the map is created and opened straight away. `person` is
+  // who it's with (added to the remembered people when `newPerson`).
+  | { type: 'CREATE_MAP'; person: Companion; newPerson: boolean; entries: Entry[] }
   | { type: 'ADD_MAP_COUNTRIES'; mapId: string; entries: Entry[] }
   | { type: 'CANCEL_NEW_MAP' }
   | { type: 'OPEN_MAP'; mapId: string }
   | { type: 'CLOSE_MAP' }
   | { type: 'PATCH_MAP_RENAME'; name: string }
   | { type: 'SAVE_MAP_RENAME' }
-  | { type: 'ADD_ENTRY_TO_MAP'; mapId: string; id: string };
+  | { type: 'ADD_ENTRY_TO_MAP'; mapId: string; entry: Entry };
 
 export type { Entry, FriendPost, Friend, Comment, Companion };

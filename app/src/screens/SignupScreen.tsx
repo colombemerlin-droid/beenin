@@ -59,7 +59,8 @@ export function SignupScreen() {
     if (!me) return;
     newCompanions.forEach((c) => api.createCompanion(me, c).catch(fail));
     if (!stubs.length) return;
-    api.createEntries(me, stubs.map((e) => ({ id: e.id, fields: mapId ? { ...e, mapId, mapNative: true } : e }))).catch(fail);
+    // On a map with a person these are ordinary entries with them; older maps pin them.
+    api.createEntries(me, stubs.map((e) => ({ id: e.id, fields: mapId ? { ...e, mapId, mapNative: !e.companionId } : e }))).catch(fail);
   }
 
   function skip() {

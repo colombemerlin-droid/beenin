@@ -1,9 +1,9 @@
 import { today, plural } from '../data/format';
 import { ME_KEY } from '../lib/identity';
 import type { AppAction, AppState, SignupPair, GroupMap, StoryDraft, ServerData } from './types';
-import type { Entry } from '../types';
+import type { Entry, Companion } from '../types';
 import type { EntryFields } from '../lib/api';
-import { personFootprint } from './selectors';
+import { personFootprint, mapPerson } from './selectors';
 
 function emptyPairDraft(): SignupPair {
   return { id: crypto.randomUUID(), countries: [], entryIds: [], nationality: [], date: '', name: '', companionId: '', expanded: false, place: '', note: '', emoji: '', photoPath: '' };
@@ -137,16 +137,20 @@ export function storyFields(state: AppState, s: StoryDraft): EntryFields {
 // the server.
 export function signupStubs(state: AppState, links: Record<string, string> = {}): Entry[] {
   if (!state.signup) return [];
-  const mapScoped = !!state.mapBackfillFor;
+  const map = state.mapBackfillFor ? state.maps.find((m) => m.id === state.mapBackfillFor) : undefined;
+  const mapScoped = !!map;
+  // A map's backfill is logged with the map's person (older maps without one keep their own list).
+  const mapWith = map ? mapPerson(state, map) : undefined;
   const rows = state.signup.pairs.flatMap((p) => p.countries.map((country, j) => ({ p, country, id: p.entryIds[j], first: j === 0 })));
   return rows.map(({ p, country, id, first }, i) => {
-    const companionId = mapScoped ? undefined : links[p.id] || p.companionId || undefined;
+    const companionId = mapScoped ? mapWith?.id : links[p.id] || p.companionId || undefined;
     const detailed = p.expanded && first;
     return {
     id,
     companionId,
+    mapId: map?.id,
     country,
-    nationality: mapScoped ? [] : natsOf(p.nationality),
+    nationality: mapScoped ? natsOf(mapWith?.nationalities) : natsOf(p.nationality),
     city: '',
     place: detailed ? p.place.trim() : '',
     placePub: false,
@@ -234,9 +238,7 @@ export function reducer(state: AppState, action: AppAction): AppState {
       const base = { ...state, companions: [...state.companions, ...action.newCompanions] };
 
       if (base.mapBackfillFor) {
-        const mapId = base.mapBackfillFor;
-        const maps = base.maps.map((m) => (m.id === mapId ? { ...m, entries: [...m.entries, ...stubs] } : m));
-        const next = { ...base, maps, signup: null, mapBackfillFor: null, overlay: null };
+        const next = { ...placeOnMap(base, base.mapBackfillFor, stubs), signup: null, mapBackfillFor: null, overlay: null };
         return stubs.length ? withToast(next, `${stubs.length} added.`) : next;
       }
 
@@ -567,8 +569,10 @@ export function reducer(state: AppState, action: AppAction): AppState {
           title: m.name,
           actions: [
             { label: 'Rename this map', kind: 'mapRename' },
-            { label: 'Edit their passports', kind: 'mapNats' },
+            // A map with a person uses their passports (edited in Profile → Names).
+            ...(mapPerson(state, m) ? [] : [{ label: 'Edit their passports', kind: 'mapNats' } as const]),
             { label: 'Backfill countries', kind: 'mapBackfill' },
+            { label: 'Delete map', color: '#B23B2A', kind: 'deleteMap' },
           ],
         },
         sheetTarget: m.id,
@@ -664,6 +668,30 @@ export function reducer(state: AppState, action: AppAction): AppState {
       if (action.kind === 'mapBackfill') {
         return { ...cleared, mapBackfillFor: id, signup: { pairs: [] }, pairDraft: emptyPairDraft() };
       }
+      if (action.kind === 'deleteMap') {
+        const m = cleared.maps.find((x) => x.id === id);
+        if (!m) return cleared;
+        const person = mapPerson(cleared, m);
+        return {
+          ...cleared,
+          sheet: {
+            title: `Delete the map “${m.name}”? ${person ? `${person.name} and everything logged with them stay` : 'Its countries stay on your map'} — only this map goes.`,
+            actions: [{ label: 'Delete map', color: '#B23B2A', kind: 'confirmDeleteMap' }],
+          },
+          sheetTarget: id,
+        };
+      }
+      if (action.kind === 'confirmDeleteMap') {
+        const m = cleared.maps.find((x) => x.id === id);
+        if (!m) return cleared;
+        // Only the map goes. Countries pinned to an older map become ordinary
+        // entries (with its person, or its passports) so nothing leaves the
+        // general maps; everything else just loses the map link.
+        const kept = keptFromMap(cleared, m);
+        const entries = [...kept, ...cleared.entries.map((e) => (e.mapId === id ? { ...e, mapId: undefined } : e))];
+        const next = { ...cleared, entries, maps: cleared.maps.filter((x) => x.id !== id), openMapId: cleared.openMapId === id ? null : cleared.openMapId, mapRenaming: false };
+        return withToast(next, `deleted the map “${m.name}”. everything logged stays.`);
+      }
       return cleared;
     }
 
@@ -683,7 +711,7 @@ export function reducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         overlay: 'newMap',
-        newMapDraft: { id: crypto.randomUUID(), name: '', nationalities: [] },
+        newMapDraft: { id: crypto.randomUUID(), name: '', personName: '', companionId: '', nationalities: [] },
       };
 
     case 'PATCH_NEW_MAP': {
@@ -694,16 +722,17 @@ export function reducer(state: AppState, action: AppAction): AppState {
     case 'CREATE_MAP': {
       const d = state.newMapDraft;
       if (!d) return state;
-      const map: GroupMap = { id: d.id, name: d.name.trim() || 'Untitled map', nationalities: d.nationalities, entries: action.entries };
-      const next = { ...state, maps: [...state.maps, map], newMapDraft: null, addMapCountry: '', overlay: null, openMapId: map.id, tab: 'map' as const, detailOn: false };
+      const p = action.person;
+      const map: GroupMap = { id: d.id, name: d.name.trim() || p.name, companionId: p.id, nationalities: p.nationalities, entries: [] };
+      const base = { ...state, companions: action.newPerson ? [...state.companions, p] : state.companions, maps: [...state.maps, map] };
+      const next = { ...placeOnMap(base, map.id, action.entries), newMapDraft: null, addMapCountry: '', overlay: null, openMapId: map.id, tab: 'map' as const, detailOn: false };
       return withToast(next, `${map.name} is live.`);
     }
 
     case 'ADD_MAP_COUNTRIES': {
       if (!action.entries.length) return state;
-      const maps = state.maps.map((m) => (m.id === action.mapId ? { ...m, entries: [...action.entries, ...m.entries] } : m));
       const n = action.entries.length;
-      return withToast({ ...state, maps }, n === 1 ? `added ${action.entries[0].country}.` : `added ${n} countries.`);
+      return withToast(placeOnMap(state, action.mapId, action.entries), n === 1 ? `added ${action.entries[0].country}.` : `added ${n} countries.`);
     }
 
     case 'CANCEL_NEW_MAP':
@@ -727,13 +756,9 @@ export function reducer(state: AppState, action: AppAction): AppState {
     }
 
     case 'ADD_ENTRY_TO_MAP': {
-      const country = state.addMapCountry;
-      if (!country) return state;
-      const entry = mapQuickEntry(action.id, country);
-      const maps = state.maps.map((m) => (m.id === action.mapId ? { ...m, entries: [entry, ...m.entries] } : m));
-      const map = maps.find((m) => m.id === action.mapId);
-      const next = { ...state, maps, overlay: null, addMapCountry: '' };
-      return withToast(next, map ? `added ${country} to ${map.name}.` : 'added.');
+      const map = state.maps.find((m) => m.id === action.mapId);
+      const next = { ...placeOnMap(state, action.mapId, [action.entry]), overlay: null, addMapCountry: '' };
+      return withToast(next, map ? `added ${action.entry.country} to ${map.name}.` : 'added.');
     }
 
     default:
@@ -741,9 +766,41 @@ export function reducer(state: AppState, action: AppAction): AppState {
   }
 }
 
-// A bare "we've been here" country on a group map ("Add to a map", or the map's
-// own "Add countries", which passes no date).
-// Exported so the caller sends the same row to the server.
+// Countries logged on a map. With the map's person they're ordinary entries
+// (they outlive the map and count as logged with that person); older maps
+// without a person keep their own list.
+function placeOnMap(state: AppState, mapId: string, entries: Entry[]): AppState {
+  if (!entries.length) return state;
+  const withPerson = entries.filter((e) => e.companionId);
+  const pinned = entries.filter((e) => !e.companionId);
+  return {
+    ...state,
+    entries: [...withPerson, ...state.entries],
+    maps: pinned.length ? state.maps.map((m) => (m.id === mapId ? { ...m, entries: [...pinned, ...m.entries] } : m)) : state.maps,
+  };
+}
+
+// What a deleted map leaves behind: countries pinned to it become ordinary
+// entries with its person (or its passports), so they stay on the general maps.
+// Exported so the delete handler tells the server the same.
+export function keptFromMap(state: AppState, m: GroupMap): Entry[] {
+  const person = mapPerson(state, m);
+  return m.entries.map((e) => ({
+    ...e,
+    mapId: undefined,
+    companionId: e.companionId || person?.id,
+    nationality: e.nationality.length ? e.nationality : natsOf(person ? person.nationalities : m.nationalities),
+  }));
+}
+
+// A country logged on a map (the map's own "Add countries", "Add to a map" from
+// a post, or a new map's first country): logged with the map's person when it
+// has one. Exported so the caller sends the same row to the server.
+export function mapCountryEntry(person: Companion | undefined, mapId: string, id: string, country: string, date = today()): Entry {
+  return { ...mapQuickEntry(id, country, date), mapId, companionId: person?.id, nationality: person ? natsOf(person.nationalities) : [] };
+}
+
+// A bare "we've been here" country, the base of mapCountryEntry.
 export function mapQuickEntry(id: string, country: string, date = today()): Entry {
   return {
     id,

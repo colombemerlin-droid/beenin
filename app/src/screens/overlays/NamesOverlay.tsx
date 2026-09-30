@@ -10,7 +10,7 @@ import { EmptyState } from '../../ui/EmptyState';
 import { Picker, inputStyle, primaryBtnStyle } from '../../ui/Picker';
 import { chipStyle, dashedChipStyle } from '../../ui/formKit';
 import { DotsIcon } from '../../ui/icons';
-import { nameRows, sameName } from '../../state/selectors';
+import { nameRows } from '../../state/selectors';
 
 // Profile → Names: everyone you've logged — remembered people, and the person
 // behind each relationship map — with their passport(s) and the countries
@@ -124,12 +124,10 @@ function EditPerson() {
       if (state.authUserId) api.updateMap(id, { name, nationalities: d.nationalities }).catch(fail);
     };
     if (d.kind === 'map') return saveMap(d.id);
-    const before = state.companions.find((c) => c.id === d.id);
-    const linkedMap = before && state.maps.find((m) => sameName(m.name, before.name));
+    // A person's map has its own name; it picks up their new passports on its own.
     const companion = { id: d.id, name, initials: initialsOf(name) || '??', nationalities: d.nationalities };
     dispatch({ type: 'UPDATE_COMPANION', companion });
     if (state.authUserId) api.updateCompanion(companion).catch(fail);
-    if (linkedMap) saveMap(linkedMap.id);
   }
 
   return (

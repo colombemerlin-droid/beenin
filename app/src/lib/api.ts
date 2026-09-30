@@ -254,12 +254,48 @@ export function deletePerson(p: { companionId?: string; mapId?: string; photoPat
   );
 }
 
-export function createMap(userId: string, m: { id: string; name: string; nationalities: string[] }): Promise<void> {
+export function createMap(userId: string, m: { id: string; name: string; nationalities: string[]; companionId?: string }): Promise<void> {
   const p = (async () => {
-    const { error } = await supabase.from('group_maps').insert({ id: m.id, owner_id: userId, name: m.name, nationalities: m.nationalities });
+    await ready(m.companionId);
+    const row: Record<string, unknown> = { id: m.id, owner_id: userId, name: m.name, nationalities: m.nationalities };
+    if (m.companionId) row.companion_id = m.companionId;
+    let { error } = await supabase.from('group_maps').insert(row);
+    // Before migration 0005 there's no companion_id column — save the map anyway.
+    if (error?.code === '42703' || error?.code === 'PGRST204') {
+      delete row.companion_id;
+      ({ error } = await supabase.from('group_maps').insert(row));
+    }
     check(error);
   })();
   return track(remember([m.id], p));
+}
+
+// Removes only the map. Countries pinned to an older map (no person) become
+// ordinary entries first — with its person or passports — so nothing leaves
+// the general maps; other entries' map link is cleared by the foreign key.
+export function deleteMap(mapId: string, keep: { companionId?: string; nationalities: string[] }): Promise<void> {
+  return track(
+    (async () => {
+      await ready(mapId);
+      const patch: Record<string, unknown> = { map_native: false, map_id: null, nationality: keep.nationalities };
+      if (keep.companionId) patch.companion_id = keep.companionId;
+      const r1 = await supabase.from('entries').update(patch).eq('map_id', mapId).eq('map_native', true);
+      check(r1.error);
+      const r2 = await supabase.from('group_maps').delete().eq('id', mapId);
+      check(r2.error);
+    })()
+  );
+}
+
+// Maps gained a person (companion_id) in migration 0005; until it's run, load
+// maps without it rather than failing the whole account.
+async function fetchMaps(me: string): Promise<{ id: string; name: string; nationalities: string[] | null; companion_id?: string | null }[]> {
+  const withPerson = await supabase.from('group_maps').select('id, name, nationalities, companion_id').eq('owner_id', me).order('created_at');
+  if (!withPerson.error) return withPerson.data || [];
+  if (withPerson.error.code !== '42703') throw withPerson.error;
+  const plain = await supabase.from('group_maps').select('id, name, nationalities').eq('owner_id', me).order('created_at');
+  check(plain.error);
+  return plain.data || [];
 }
 
 export function updateMap(id: string, patch: { name?: string; nationalities?: string[] }): Promise<void> {
@@ -578,14 +614,14 @@ interface FriendshipRow {
 }
 
 export async function loadAccount(me: string, myName: string): Promise<ServerData> {
-  const [own, priv, comps, maps, fships] = await Promise.all([
+  const [own, priv, comps, mapRows, fships] = await Promise.all([
     supabase.from('entries').select(ENTRY_COLS).eq('owner_id', me).order('created_at', { ascending: false }),
     supabase.rpc('my_entry_private'),
     supabase.from('companions').select('id, name, initials, nationalities').eq('owner_id', me).order('created_at'),
-    supabase.from('group_maps').select('id, name, nationalities').eq('owner_id', me).order('created_at'),
+    fetchMaps(me),
     supabase.from('friendships').select('user_id_1, user_id_2, requested_by, status, created_at'),
   ]);
-  [own, priv, comps, maps, fships].forEach((r) => check(r.error));
+  [own, priv, comps, fships].forEach((r) => check(r.error));
 
   const ownRows = (own.data || []) as unknown as EntryRow[];
   const friendships = (fships.data || []) as FriendshipRow[];
@@ -617,9 +653,10 @@ export async function loadAccount(me: string, myName: string): Promise<ServerDat
   const privById = new Map(((priv.data || []) as { id: string; person_name: string; place: string }[]).map((p) => [p.id, p]));
   const toEntry = (r: EntryRow) => rowToEntry(r, me, people, privById.get(r.id));
 
-  const groupMaps: GroupMap[] = ((maps.data || []) as { id: string; name: string; nationalities: string[] | null }[]).map((m) => ({
+  const groupMaps: GroupMap[] = mapRows.map((m) => ({
     id: m.id,
     name: m.name,
+    companionId: m.companion_id || undefined,
     nationalities: m.nationalities || [],
     entries: ownRows.filter((r) => r.map_native && r.map_id === m.id).map(toEntry),
   }));

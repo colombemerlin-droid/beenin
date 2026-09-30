@@ -1,5 +1,6 @@
 import { useStore } from '../../state/store';
-import { mapQuickEntry } from '../../state/reducer';
+import { mapCountryEntry } from '../../state/reducer';
+import { mapPerson } from '../../state/selectors';
 import * as api from '../../lib/api';
 import { flagOf } from '../../data/countries';
 import { OverlayHeader } from '../../ui/OverlayHeader';
@@ -11,12 +12,15 @@ export function MapPickerOverlay() {
   if (state.overlay !== 'mapPicker') return null;
 
   function addTo(mapId: string) {
-    const id = crypto.randomUUID();
-    const entry = mapQuickEntry(id, state.addMapCountry);
-    dispatch({ type: 'ADD_ENTRY_TO_MAP', mapId, id });
-    if (state.authUserId && entry.country) {
+    const map = state.maps.find((m) => m.id === mapId);
+    if (!map || !state.addMapCountry) return;
+    // Logged with the map's person, so it counts as theirs everywhere.
+    const person = mapPerson(state, map);
+    const entry = mapCountryEntry(person, mapId, crypto.randomUUID(), state.addMapCountry);
+    dispatch({ type: 'ADD_ENTRY_TO_MAP', mapId, entry });
+    if (state.authUserId) {
       api
-        .createEntry(state.authUserId, id, { ...entry, mapId, mapNative: true })
+        .createEntry(state.authUserId, entry.id, { ...entry, mapNative: !person })
         .catch(() => dispatch({ type: 'SHOW_TOAST', message: "couldn't save that to your account." }));
     }
   }

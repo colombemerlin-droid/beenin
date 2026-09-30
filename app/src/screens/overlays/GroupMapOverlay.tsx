@@ -1,7 +1,8 @@
 import { useStore } from '../../state/store';
 import * as api from '../../lib/api';
 import { flagOf, natFlagOf, pct } from '../../data/countries';
-import { continentGroups } from '../../state/selectors';
+import { continentGroups, mapCountries, mapPerson } from '../../state/selectors';
+import { WorldMap } from '../../components/WorldMap';
 import { OverlayHeader } from '../../ui/OverlayHeader';
 import { EmptyState } from '../../ui/EmptyState';
 import { DotsIcon } from '../../ui/icons';
@@ -13,7 +14,10 @@ export function GroupMapOverlay() {
   // Hide while a backfill (new-map or re-backfill) session is in progress so SignupScreen isn't covered.
   if (!map || state.signup) return null;
 
-  const linkedEntries = state.entries.filter((e) => e.mapId === map.id);
+  // Who it's with, and every country logged with them (stories, backfills,
+  // countries added here) — the map shows only those.
+  const person = mapPerson(state, map);
+  const passports = person ? person.nationalities : map.nationalities;
 
   function saveRename() {
     const name = state.mapRenameDraft.trim();
@@ -22,7 +26,7 @@ export function GroupMapOverlay() {
       api.updateMap(map.id, { name }).catch(() => dispatch({ type: 'SHOW_TOAST', message: "couldn't rename it on your account." }));
     }
   }
-  const countries = [...new Set([...map.entries, ...linkedEntries].map((e) => e.country).filter(Boolean))];
+  const countries = mapCountries(state, map);
   const groups = continentGroups(countries);
 
   return (
@@ -54,8 +58,9 @@ export function GroupMapOverlay() {
             </button>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
-            {map.nationalities.map((n) => (
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            {person && <span style={{ font: '500 14px/1.3 Inter, sans-serif', color: 'var(--ink-body)', marginRight: 2 }}>with {person.name}</span>}
+            {passports.map((n) => (
               <span
                 key={n}
                 style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 12px', borderRadius: 999, background: 'var(--coral-tint)', color: 'var(--coral-dark)', font: '500 13px/1.3 Inter, sans-serif' }}
@@ -66,6 +71,20 @@ export function GroupMapOverlay() {
             ))}
           </div>
         )}
+
+        <div
+          style={{
+            aspectRatio: '1.55 / 1',
+            borderRadius: 22,
+            background: 'var(--paper)',
+            border: '1px solid var(--stone)',
+            padding: '14px 14px 12px',
+            marginBottom: 12,
+            boxShadow: '0 1px 2px rgba(31,26,23,.04), 0 4px 14px rgba(31,26,23,.06)',
+          }}
+        >
+          <WorldMap logged={countries} />
+        </div>
 
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={cardStyle}>

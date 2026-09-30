@@ -1,7 +1,8 @@
 import type { CSSProperties } from 'react';
 import { useStore } from '../state/store';
 import * as api from '../lib/api';
-import { mapQuickEntry } from '../state/reducer';
+import { mapCountryEntry } from '../state/reducer';
+import { mapCountries, mapPerson } from '../state/selectors';
 import { PAIRS, flagOf } from '../data/countries';
 import { EMOJI_GROUPS, splitEmoji } from '../data/emoji';
 import { OverlayHeader } from './OverlayHeader';
@@ -21,18 +22,18 @@ export function Picker() {
   const isMulti = isNatMode || pk === 'mapCountries' || pk === 'signupCountry';
   const openMap = pk === 'mapCountries' && state.openMapId ? state.maps.find((m) => m.id === state.openMapId) : undefined;
   // Countries already on the map being added to: shown ticked, not re-addable.
-  const locked = new Set(
-    openMap ? [...openMap.entries, ...state.entries.filter((e) => e.mapId === openMap.id)].map((e) => e.country).filter(Boolean) : []
-  );
+  const locked = new Set(openMap ? mapCountries(state, openMap) : []);
 
   function save() {
     if (pk === 'mapCountries') {
       if (openMap && state.pickerDraft.length) {
-        const entries = state.pickerDraft.map((c) => mapQuickEntry(crypto.randomUUID(), c, ''));
+        // Logged with the map's person, so they stay theirs even if the map is deleted.
+        const person = mapPerson(state, openMap);
+        const entries = state.pickerDraft.map((c) => mapCountryEntry(person, openMap.id, crypto.randomUUID(), c, ''));
         dispatch({ type: 'ADD_MAP_COUNTRIES', mapId: openMap.id, entries });
         if (state.authUserId) {
           api
-            .createEntries(state.authUserId, entries.map((e) => ({ id: e.id, fields: { ...e, mapId: openMap.id, mapNative: true } })))
+            .createEntries(state.authUserId, entries.map((e) => ({ id: e.id, fields: { ...e, mapNative: !person } })))
             .catch(() => dispatch({ type: 'SHOW_TOAST', message: "couldn't save those to your account — try again." }));
         }
       }

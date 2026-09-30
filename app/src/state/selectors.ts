@@ -1,7 +1,7 @@
 import { byCountry, natToCountry, CONTINENTS, pct, type ContinentCode } from '../data/countries';
 import { ME_KEY, initialsOf } from '../lib/identity';
 import type { AppState, GroupMap } from './types';
-import type { Entry, NotificationItem } from '../types';
+import type { Entry, NotificationItem, Companion } from '../types';
 
 export function beenCountries(state: AppState): string[] {
   const set = new Set<string>();
@@ -158,17 +158,28 @@ export function sameName(a: string, b: string): boolean {
   return norm(a) === norm(b);
 }
 
-function mapCountries(state: AppState, m: GroupMap): string[] {
-  return [...m.entries, ...state.entries.filter((e) => e.mapId === m.id)].map((e) => e.country);
+const unique = (xs: string[]) => [...new Set(xs.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+// Who a relationship map is with. Maps made before maps had a person fall back
+// to a remembered person with the map's name.
+export function mapPerson(state: AppState, m: GroupMap): Companion | undefined {
+  if (m.companionId) return state.companions.find((c) => c.id === m.companionId);
+  return state.companions.find((c) => sameName(c.name, m.name));
 }
 
-const unique = (xs: string[]) => [...new Set(xs.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+// The map's countries: everything logged with its person, anywhere (stories,
+// backfills, countries added on the map), plus what's pinned to the map itself.
+export function mapCountries(state: AppState, m: GroupMap): string[] {
+  const person = mapPerson(state, m);
+  const logged = state.entries.filter((e) => e.mapId === m.id || (person && e.companionId === person.id));
+  return unique([...m.entries, ...logged].map((e) => e.country));
+}
 
 // Everyone logged: any history at all keeps a person here — a "We met", a plain
 // story, a backfill, a map. The "Been In" view is the subset with countries.
 export function nameRows(state: AppState): NameRow[] {
   const rows: NameRow[] = state.companions.map((c) => {
-    const map = state.maps.find((m) => sameName(m.name, c.name));
+    const map = state.maps.find((m) => mapPerson(state, m)?.id === c.id);
     const theirs = state.entries.filter((e) => e.companionId === c.id);
     return {
       id: c.id,
@@ -180,9 +191,8 @@ export function nameRows(state: AppState): NameRow[] {
       hasMap: !!map,
     };
   });
-  const named = new Set(state.companions.map((c) => norm(c.name)));
   for (const m of state.maps) {
-    if (named.has(norm(m.name))) continue;
+    if (mapPerson(state, m)) continue;
     rows.push({
       id: m.id,
       name: m.name,
@@ -210,7 +220,7 @@ export interface PersonFootprint {
 
 export function personFootprint(state: AppState, id: string): PersonFootprint | null {
   const c = state.companions.find((x) => x.id === id);
-  const map = c ? state.maps.find((m) => sameName(m.name, c.name)) : state.maps.find((m) => m.id === id);
+  const map = c ? state.maps.find((m) => mapPerson(state, m)?.id === c.id) : state.maps.find((m) => m.id === id);
   if (!c && !map) return null;
   const stories = c ? state.entries.filter((e) => e.companionId === c.id) : [];
   const mapEntries = map ? map.entries : [];

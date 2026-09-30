@@ -1,6 +1,6 @@
 import { useStore } from '../state/store';
 import * as api from '../lib/api';
-import { personFootprint } from '../state/selectors';
+import { personFootprint, mapPerson } from '../state/selectors';
 import type { SheetAction } from '../state/types';
 
 export function Sheet() {
@@ -17,6 +17,16 @@ export function Sheet() {
     if (!me) return;
     const fail = () => dispatch({ type: 'SHOW_TOAST', message: "couldn't sync that change to your account." });
     if (kind === 'report' && state.friendPosts.some((p) => p.id === target)) api.reportEntry(target, me).catch(fail);
+    if (kind === 'confirmDeleteMap') {
+      const m = state.maps.find((x) => x.id === target);
+      if (m) {
+        const person = mapPerson(state, m);
+        api.deleteMap(m.id, { companionId: person?.id, nationalities: person ? person.nationalities : m.nationalities }).catch(() => {
+          fail();
+          refresh();
+        });
+      }
+    }
     if (kind === 'confirmDeleteCompanion') {
       const f = personFootprint(state, target);
       if (f) {
